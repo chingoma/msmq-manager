@@ -1,0 +1,68 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # MSMQ Manager Application
+  - job_name: 'msmq-manager'
+    static_configs:
+      - targets: ['msmq-manager:8080']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    
+    # Relabeling rules
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+      - source_labels: [__address__]
+        target_label: port
+        regex: '([^:]+):(\d+)'
+        replacement: '${2}'
+      - source_labels: []
+        target_label: application
+        replacement: 'msmq-manager'
+      - source_labels: []
+        target_label: environment
+        replacement: 'development'
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+
+# Alerting rules
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Recording rules
+recording_rules:
+  - name: msmq_operation_rate
+    expr: rate(msmq_method_execution_time_count[5m])
+    labels:
+      metric_type: "rate"
+  
+  - name: msmq_error_rate
+    expr: rate(msmq_method_failure_count[5m])
+    labels:
+      metric_type: "error_rate"
+  
+  - name: msmq_success_rate
+    expr: rate(msmq_method_success_count[5m])
+    labels:
+      metric_type: "success_rate"
+  
+  - name: msmq_avg_response_time
+    expr: rate(msmq_method_execution_time_sum[5m]) / rate(msmq_method_execution_time_count[5m])
+    labels:
+      metric_type: "avg_response_time"

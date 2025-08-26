@@ -1,0 +1,227 @@
+spring:
+  application:
+    name: msmq-manager
+  profiles:
+    active: dev
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+  security:
+    user:
+      name: admin
+      password: ${ADMIN_PASSWORD:admin123}
+      roles: ADMIN
+
+# Server Configuration
+server:
+  port: 8081
+  servlet:
+    context-path: /api/v1
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Logging Configuration
+logging:
+  level:
+    com.enterprise.msmq: INFO
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/msmq-manager.log
+    max-size: 100MB
+    max-history: 30
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,msmq
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+    msmq:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# Swagger UI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    doc-expansion: none
+  packages-to-scan: com.enterprise.msmq.controller
+
+# MSMQ Configuration
+msmq:
+  connection:
+    timeout: 30000
+    retry-attempts: 3
+    retry-delay: 1000
+  queue:
+    default-timeout: 60000
+    max-message-size: 4194304
+  monitoring:
+    enabled: true
+    interval: 5000
+  security:
+    authentication: true
+    encryption: false
+
+# Response Code Configuration
+response:
+  codes:
+    success: "600"
+    validation-error: "601"
+    business-error: "602"
+    system-error: "603"
+    authentication-error: "604"
+    authorization-error: "605"
+    not-found: "606"
+    conflict: "607"
+    timeout: "608"
+    queue-full: "609"
+    queue-not-available: "610"
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/msmq_manager
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: Approved12@
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history
+    baseline-version: 0
+
+logging:
+  level:
+    com.enterprise.msmq: DEBUG
+    org.springframework.web: DEBUG
+
+msmq:
+  connection:
+    host: localhost
+    port: 1801
+    timeout: 10000
+
+---
+# Testing Profile
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:postgresql://localhost:5432/msmq_manager_test
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: Approved12@
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  
+  # Flyway Configuration for Testing
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history
+    baseline-version: 0
+
+msmq:
+  connection:
+    host: test-msmq-server
+    port: 1801
+
+---
+# Staging Profile
+spring:
+  config:
+    activate:
+      on-profile: staging
+  datasource:
+    url: jdbc:postgresql://staging-msmq-server:5432/msmq_manager
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: ${DB_PASSWORD:Approved12@}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+msmq:
+  connection:
+    host: staging-msmq-server
+    port: 1801
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:postgresql://prod-msmq-server:5432/msmq_manager
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: ${DB_PASSWORD:Approved12@}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    com.enterprise.msmq: WARN
+    org.springframework.web: WARN
+
+msmq:
+  connection:
+    host: prod-msmq-server
+    port: 1801
+    timeout: 60000
+    retry-attempts: 5
+  security:
+    encryption: true

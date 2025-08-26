@@ -1,0 +1,116 @@
+# Test Profile Configuration for MSMQ Manager
+# This file contains test-specific configurations
+
+spring:
+  application:
+    name: msmq-manager-test
+  
+  # Test database configuration (H2 in-memory for testing)
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  # JPA/Hibernate configuration for testing
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+  
+  # H2 console for test debugging
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  # Test-specific MSMQ configuration
+  msmq:
+    connection:
+      host: localhost
+      port: 1801
+      timeout: 5000
+      retry-count: 2
+    queues:
+      default:
+        name: test-queue
+        path: .\private$\test-queue
+        max-size: 1048576
+        transactional: false
+        private: true
+        authenticated: false
+        encrypted: false
+
+# Server configuration for testing
+server:
+  port: 0  # Random port for testing
+  servlet:
+    context-path: /msmq-manager-test
+
+# Logging configuration for testing
+logging:
+  level:
+    com.enterprise.msmq: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management endpoints for testing
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: msmq-manager-test
+      profile: test
+
+# Response codes configuration for testing
+response:
+  codes:
+    success: "600"
+    validation-error: "601"
+    business-error: "602"
+    system-error: "603"
+    authentication-error: "604"
+    authorization-error: "605"
+    resource-not-found: "606"
+    msmq-connection-error: "607"
+    msmq-queue-error: "608"
+    msmq-message-error: "609"
+    monitoring-error: "610"
+    unknown-error: "699"
+
+# Test-specific security configuration
+security:
+  basic:
+    enabled: false  # Disable basic auth for testing
+  user:
+    name: testuser
+    password: testpass
+    roles: USER,ADMIN
+
+# Test-specific MSMQ simulation settings
+msmq:
+  simulation:
+    enabled: true
+    delay-ms: 100
+    fail-rate: 0.1  # 10% failure rate for testing
+    max-queue-size: 1000
+    max-message-size: 1048576
