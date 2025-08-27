@@ -5,6 +5,7 @@ import com.enterprise.msmq.enums.ResponseCode;
 import com.enterprise.msmq.exception.MsmqException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,9 @@ public class MsmqConnectionManager {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqConnectionManager.class);
 
+    @Autowired
+    private PowerShellMsmqConnectionManager powerShellMsmqConnectionManager;
+    
     private final String host;
     private final int port;
     private final long timeout;
@@ -61,7 +65,7 @@ public class MsmqConnectionManager {
     }
 
     /**
-     * Establishes a connection to the MSMQ service.
+     * Establishes a connection to the MSMQ service using real MSMQ implementation.
      * 
      * @throws MsmqException if connection fails
      */
@@ -74,21 +78,26 @@ public class MsmqConnectionManager {
             connectionAttempts++;
             connectionStatus.setRetryCount(connectionAttempts);
             
-            // Simulate connection establishment (replace with actual MSMQ connection logic)
-            Thread.sleep(100); // Simulate connection time
+            // Use PowerShell MSMQ connection manager
+            boolean connected = powerShellMsmqConnectionManager.connect();
             
-            // Update connection status
-            connected.set(true);
-            connectedAt = LocalDateTime.now();
-            connectionStatus.setStatus("CONNECTED");
-            connectionStatus.setLastConnected(System.currentTimeMillis());
-            connectionStatus.setConnected(true);
+            if (connected) {
+                // Update connection status
+                this.connected.set(true);
+                connectedAt = LocalDateTime.now();
+                connectionStatus.setStatus("CONNECTED");
+                connectionStatus.setLastConnected(System.currentTimeMillis());
+                connectionStatus.setConnected(true);
+                
+                logger.info("Successfully connected to MSMQ service at {}:{}", host, port);
+            } else {
+                connectionStatus.setStatus("ERROR");
+                connectionStatus.setErrorMessage("Real MSMQ connection failed");
+                this.connected.set(false);
+                logger.error("Failed to connect to MSMQ service at {}:{}", host, port);
+                throw new MsmqException(ResponseCode.CONNECTION_ERROR, "Real MSMQ connection failed");
+            }
             
-            logger.info("Successfully connected to MSMQ service at {}:{}", host, port);
-            
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new MsmqException(ResponseCode.CONNECTION_ERROR, "Connection interrupted", e);
         } catch (Exception e) {
             connectionStatus.setStatus("ERROR");
             connectionStatus.setErrorMessage("Connection failed: " + e.getMessage());
@@ -99,7 +108,7 @@ public class MsmqConnectionManager {
     }
 
     /**
-     * Disconnects from the MSMQ service.
+     * Disconnects from the MSMQ service using real MSMQ implementation.
      * 
      * @throws MsmqException if disconnection fails
      */
@@ -110,8 +119,8 @@ public class MsmqConnectionManager {
             // Update connection status
             connectionStatus.setStatus("DISCONNECTING");
             
-            // Simulate disconnection (replace with actual MSMQ disconnection logic)
-            Thread.sleep(50); // Simulate disconnection time
+            // Use PowerShell MSMQ connection manager
+            powerShellMsmqConnectionManager.disconnect();
             
             // Update connection status
             connected.set(false);
@@ -122,9 +131,6 @@ public class MsmqConnectionManager {
             
             logger.info("Successfully disconnected from MSMQ service");
             
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new MsmqException(ResponseCode.CONNECTION_ERROR, "Disconnection interrupted", e);
         } catch (Exception e) {
             connectionStatus.setStatus("ERROR");
             connectionStatus.setErrorMessage("Disconnection failed: " + e.getMessage());
@@ -170,7 +176,7 @@ public class MsmqConnectionManager {
      * @return true if connected, false otherwise
      */
     public boolean isConnected() {
-        return connected.get();
+        return connected.get() && powerShellMsmqConnectionManager.isConnected();
     }
 
     /**
@@ -249,5 +255,14 @@ public class MsmqConnectionManager {
         connectionAttempts = 0;
         connectionStatus.setRetryCount(0);
         connectionStatus.setErrorMessage(null);
+    }
+    
+    /**
+     * Gets the PowerShell MSMQ connection manager for direct operations.
+     * 
+     * @return the PowerShell MSMQ connection manager
+     */
+    public PowerShellMsmqConnectionManager getPowerShellMsmqConnectionManager() {
+        return powerShellMsmqConnectionManager;
     }
 }

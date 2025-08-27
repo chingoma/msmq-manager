@@ -3,8 +3,12 @@ package com.enterprise.msmq.util;
 import com.enterprise.msmq.dto.MsmqMessage;
 import com.enterprise.msmq.dto.MsmqQueue;
 import com.enterprise.msmq.exception.MsmqException;
+import com.enterprise.msmq.platform.windows.MsmqConstants;
+import com.enterprise.msmq.util.PowerShellMsmqConnectionManager;
+import com.enterprise.msmq.service.MsmqQueueSyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -27,7 +31,13 @@ public class MsmqQueueManager {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqQueueManager.class);
 
-    // In-memory storage for queues and messages (replace with actual MSMQ operations)
+    @Autowired
+    private PowerShellMsmqConnectionManager powerShellMsmqConnectionManager;
+
+    @Autowired
+    private MsmqQueueSyncService msmqQueueSyncService;
+
+    // In-memory storage for queues and messages (will be replaced with real MSMQ operations)
     private final Map<String, MsmqQueue> queues = new ConcurrentHashMap<>();
     private final Map<String, Queue<MsmqMessage>> messageQueues = new ConcurrentHashMap<>();
     private final Map<String, MsmqMessage> messages = new ConcurrentHashMap<>();
@@ -52,62 +62,72 @@ public class MsmqQueueManager {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue name cannot exceed 124 characters");
             }
 
-            if (queue.getName().contains("\\") || queue.getName().contains("/") || queue.getName().contains(":")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Queue name contains invalid characters");
-            }
-
-            if (queue.getName().startsWith(".") || queue.getName().endsWith(".")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Queue name cannot start or end with a dot");
-            }
-
-            if (queue.getName().contains("..")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Queue name cannot contain consecutive dots");
-            }
-
-            if (queue.getName().matches(".*[<>\"|?*].*")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Queue name contains invalid characters");
-            }
-
-            if (queue.getName().equalsIgnoreCase("SYSTEM$") || queue.getName().equalsIgnoreCase("SYSTEM$DEADLETTER")) {
+            // MSMQ-specific validation
+            String queueName = queue.getName().trim();
+            
+            // Check for reserved names
+            if (queueName.equalsIgnoreCase("SYSTEM$") || queueName.equalsIgnoreCase("SYSTEM$DEADLETTER")) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue name is reserved and cannot be used");
             }
-
-            if (queue.getName().startsWith("PRIVATE$") && !queue.getName().startsWith("PRIVATE$\\")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Private queue name must start with 'PRIVATE$\\'");
+            
+            // Validate private queue format (most common)
+            if (queueName.startsWith("PRIVATE$\\")) {
+                String privateName = queueName.substring("PRIVATE$\\".length());
+                if (privateName.isEmpty() || privateName.contains("\\") || privateName.contains("/")) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), "Invalid private queue format. Use 'PRIVATE$\\queuename'");
+                }
             }
-
-            if (queue.getName().startsWith("MACHINE$") && !queue.getName().startsWith("MACHINE$\\")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Machine queue name must start with 'MACHINE$\\'");
+            // Validate machine queue format
+            else if (queueName.startsWith("MACHINE$\\")) {
+                String machineName = queueName.substring("MACHINE$\\".length());
+                if (machineName.isEmpty() || machineName.contains("\\") || machineName.contains("/")) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), "Invalid machine queue format. Use 'MACHINE$\\queuename'");
+                }
             }
-
-            if (queue.getName().startsWith("DIRECT=") && !queue.getName().matches("DIRECT=TCP:[^:]+:\\d+")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Direct queue format must be 'DIRECT=TCP:host:port'");
+            // Validate direct queue format
+            else if (queueName.startsWith("DIRECT=")) {
+                if (!queueName.matches("DIRECT=TCP:[^:]+:\\d+\\\\[^\\\\]+")) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), "Invalid direct queue format. Use 'DIRECT=TCP:host:port\\queuename'");
+                }
             }
-
-            if (queue.getName().startsWith("FORMATNAME:") && !queue.getName().matches("FORMATNAME:\\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\\}")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Format name must be 'FORMATNAME:{GUID}'");
+            // Validate format name
+            else if (queueName.startsWith("FORMATNAME:")) {
+                if (!queueName.matches("FORMATNAME:\\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\\}")) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), "Invalid format name. Use 'FORMATNAME:{GUID}'");
+                }
             }
-
-            if (queue.getName().startsWith("OS:") && !queue.getName().matches("OS:[^:]+:[^:]+")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "OS queue format must be 'OS:computer:queue'");
+            // Validate OS queue format
+            else if (queueName.startsWith("OS:")) {
+                if (!queueName.matches("OS:[^:]+:[^:]+")) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), "Invalid OS queue format. Use 'OS:computer:queue'");
+                }
             }
-
-            if (queue.getName().startsWith("HTTP://") && !queue.getName().matches("HTTP://[^:]+:\\d+/[^/]+")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "HTTP queue format must be 'HTTP://host:port/path'");
+            // Validate HTTP/HTTPS/SOAP queue format
+            else if (queueName.startsWith("HTTP://") || queueName.startsWith("HTTPS://") || queueName.startsWith("SOAP://")) {
+                if (!queueName.matches("(HTTP|HTTPS|SOAP)://[^:]+:\\d+/[^/]+")) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), "Invalid web service queue format. Use 'PROTOCOL://host:port/path'");
+                }
             }
-
-            if (queue.getName().startsWith("HTTPS://") && !queue.getName().matches("HTTPS://[^:]+:\\d+/[^/]+")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "HTTPS queue format must be 'HTTPS://host:port/path'");
-            }
-
-            if (queue.getName().startsWith("SOAP://") && !queue.getName().matches("SOAP://[^:]+:\\d+/[^/]+")) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "SOAP queue format must be 'SOAP://host:port/path'");
+            // Default case: treat as private queue name (will be converted to PRIVATE$\name)
+            else {
+                // Check for invalid characters in simple queue names
+                if (queueName.contains("\\") || queueName.contains("/") || queueName.contains(":") || 
+                    queueName.contains("<") || queueName.contains(">") || queueName.contains("\"") || 
+                    queueName.contains("|") || queueName.contains("?") || queueName.contains("*") ||
+                    queueName.startsWith(".") || queueName.endsWith(".") || queueName.contains("..")) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), 
+                        "Invalid queue name characters. Use simple names like 'myqueue' or proper MSMQ formats like 'PRIVATE$\\myqueue'");
+                }
             }
 
             // Check if queue already exists
             if (queues.containsKey(queue.getName())) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue already exists: " + queue.getName());
             }
+            
+            // Log the queue creation attempt with MSMQ path
+            String queuePath = buildQueuePath(queue.getName());
+            logger.info("Attempting to create MSMQ queue: '{}' -> '{}'", queue.getName(), queuePath);
             
             // Set default values
             queue.setCreatedTime(LocalDateTime.now());
@@ -117,11 +137,18 @@ public class MsmqQueueManager {
             queue.setMessageCount(0L);
             queue.setSize(0L);
             
-            // Store queue
+            // Create queue in PowerShell MSMQ
+            boolean msmqCreated = powerShellMsmqConnectionManager.createQueue(queuePath);
+            
+            if (!msmqCreated) {
+                throw new MsmqException(ResponseCode.fromCode("611"), "Failed to create MSMQ queue: " + queuePath);
+            }
+            
+            // Store queue locally for tracking
             queues.put(queue.getName(), queue);
             messageQueues.put(queue.getName(), new LinkedList<>());
             
-            logger.debug("Successfully created queue: {}", queue.getName());
+            logger.debug("Successfully created queue: {} with path: {}", queue.getName(), queuePath);
             return queue;
             
         } catch (MsmqException e) {
@@ -136,25 +163,39 @@ public class MsmqQueueManager {
      * Deletes an MSMQ queue.
      * 
      * @param queueName the name of the queue to delete
+     * @param deleteFromMsmq if true, deletes from MSMQ; if false, only removes from app database
      * @throws MsmqException if queue deletion fails
      */
-    public void deleteQueue(String queueName) throws MsmqException {
+    public void deleteQueue(String queueName, boolean deleteFromMsmq) throws MsmqException {
         try {
-            logger.debug("Deleting queue: {}", queueName);
+            logger.debug("Deleting queue: {} (deleteFromMsmq: {})", queueName, deleteFromMsmq);
             
-            // Check if queue exists
+            // Check if queue exists in app database
             if (!queues.containsKey(queueName)) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
+                throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found in application database: " + queueName);
             }
             
-            // Remove queue and its messages
+            // If requested, delete from MSMQ
+            if (deleteFromMsmq) {
+                String queuePath = buildQueuePath(queueName);
+                boolean msmqDeleted = powerShellMsmqConnectionManager.deleteQueue(queuePath);
+                
+                if (!msmqDeleted) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), "Failed to delete MSMQ queue: " + queuePath);
+                }
+                logger.debug("Successfully deleted queue from MSMQ: {} with path: {}", queueName, queuePath);
+            } else {
+                logger.debug("Skipping MSMQ deletion for queue: {} (deleteFromMsmq=false)", queueName);
+            }
+            
+            // Always remove queue and its messages from local storage
             queues.remove(queueName);
             messageQueues.remove(queueName);
             
             // Remove all messages for this queue
             messages.entrySet().removeIf(entry -> queueName.equals(entry.getValue().getDestinationQueue()));
             
-            logger.debug("Successfully deleted queue: {}", queueName);
+            logger.debug("Successfully removed queue from application database: {}", queueName);
             
         } catch (MsmqException e) {
             throw e;
@@ -162,6 +203,16 @@ public class MsmqQueueManager {
             logger.error("Failed to delete queue: {}", queueName, e);
             throw new MsmqException(ResponseCode.fromCode("611"), "Failed to delete queue: " + queueName, e);
         }
+    }
+
+    /**
+     * Deletes an MSMQ queue (defaults to deleting from MSMQ).
+     * 
+     * @param queueName the name of the queue to delete
+     * @throws MsmqException if queue deletion fails
+     */
+    public void deleteQueue(String queueName) throws MsmqException {
+        deleteQueue(queueName, true);
     }
 
     /**
@@ -213,6 +264,48 @@ public class MsmqQueueManager {
         } catch (Exception e) {
             logger.error("Failed to list queues", e);
             throw new MsmqException(ResponseCode.fromCode("611"), "Failed to list queues", e);
+        }
+    }
+
+    /**
+     * Synchronizes queues from MSMQ to the application database.
+     * This method:
+     * 1. Gets all queues from MSMQ
+     * 2. Adds new queues to the app database
+     * 3. Updates existing queues
+     * 4. Does NOT delete any MSMQ queues
+     * 
+     * @throws MsmqException if synchronization fails
+     */
+    public void syncQueuesFromMsmq() throws MsmqException {
+        try {
+            logger.info("Starting queue synchronization from MSMQ...");
+            
+            // Call the service to sync queues to database
+            msmqQueueSyncService.syncQueuesAtStartup();
+            
+            // Get all queues from MSMQ for in-memory sync
+            List<MsmqQueue> msmqQueues = msmqQueueSyncService.getAllQueuesFromMsmq();
+            logger.info("Found {} queues in MSMQ system", msmqQueues.size());
+            
+            // Clear existing queues from app database (but not from MSMQ)
+            queues.clear();
+            messageQueues.clear();
+            messages.clear();
+            
+            // Add all queues from MSMQ to app database
+            for (MsmqQueue msmqQueue : msmqQueues) {
+                String queueName = msmqQueue.getName();
+                queues.put(queueName, msmqQueue);
+                messageQueues.put(queueName, new LinkedList<>());
+                logger.debug("Synchronized queue: {} from MSMQ", queueName);
+            }
+            
+            logger.info("Successfully synchronized {} queues from MSMQ to application database", msmqQueues.size());
+            
+        } catch (Exception e) {
+            logger.error("Failed to synchronize queues from MSMQ", e);
+            throw new MsmqException(ResponseCode.fromCode("611"), "Failed to synchronize queues from MSMQ", e);
         }
     }
 
@@ -306,6 +399,7 @@ public class MsmqQueueManager {
                     }
                 }
             }
+            
             queue.setSize(totalSize);
             
             return queue;
@@ -350,22 +444,38 @@ public class MsmqQueueManager {
                 message.setSize((long) message.getBody().getBytes().length);
             }
             
-            // Add message to queue
-            Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
-            if (messageQueue != null) {
-                messageQueue.offer(message);
-                messages.put(message.getMessageId(), message);
-            }
+            // Send message to PowerShell MSMQ queue
+            String queuePath = buildQueuePath(queueName);
             
-            // Update queue statistics
-            MsmqQueue queue = queues.get(queueName);
-            if (queue != null) {
-                queue.setMessageCount((long) messageQueue.size());
-                queue.setLastAccessTime(LocalDateTime.now());
+            try {
+                // Use PowerShell MSMQ to send message
+                boolean messageSent = powerShellMsmqConnectionManager.sendMessage(queuePath, message.getBody());
+                
+                if (!messageSent) {
+                    throw new MsmqException(ResponseCode.fromCode("611"), "Failed to send message to PowerShell MSMQ queue: " + queuePath);
+                }
+                
+                // Add message to local queue for tracking
+                Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
+                if (messageQueue != null) {
+                    messageQueue.offer(message);
+                    messages.put(message.getMessageId(), message);
+                }
+                
+                // Update queue statistics
+                MsmqQueue queue = queues.get(queueName);
+                if (queue != null) {
+                    queue.setMessageCount((long) messageQueue.size());
+                    queue.setLastAccessTime(LocalDateTime.now());
+                }
+                
+                logger.debug("Successfully sent message to PowerShell MSMQ queue: {}", queueName);
+                return message;
+                
+            } catch (Exception e) {
+                logger.error("Failed to send message to PowerShell MSMQ queue: {}", queueName, e);
+                throw new MsmqException(ResponseCode.fromCode("611"), "Failed to send message to PowerShell MSMQ queue: " + queueName, e);
             }
-            
-            logger.debug("Successfully sent message to queue: {}", queueName);
-            return message;
             
         } catch (MsmqException e) {
             throw e;
@@ -392,33 +502,38 @@ public class MsmqQueueManager {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
-            // Get message queue
-            Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
-            if (messageQueue == null || messageQueue.isEmpty()) {
-                return Optional.empty();
-            }
+            // Receive message from PowerShell MSMQ queue
+            String queuePath = buildQueuePath(queueName);
             
-            // Receive message
-            MsmqMessage message = messageQueue.poll();
-            if (message != null) {
+            try {
+                // Use PowerShell MSMQ to receive message
+                String receivedMessage = powerShellMsmqConnectionManager.receiveMessage(queuePath);
+                
+                if (receivedMessage == null || receivedMessage.isEmpty()) {
+                    return Optional.empty();
+                }
+                
+                // Create message object from received data
+                MsmqMessage message = new MsmqMessage();
+                message.setMessageId(UUID.randomUUID().toString());
+                message.setBody(receivedMessage);
                 message.setReceivedTime(LocalDateTime.now());
                 message.setStatus("RECEIVED");
-                
-                // Remove from messages map
-                messages.remove(message.getMessageId());
+                message.setSize((long) receivedMessage.getBytes().length);
                 
                 // Update queue statistics
                 MsmqQueue queue = queues.get(queueName);
                 if (queue != null) {
-                    queue.setMessageCount((long) messageQueue.size());
                     queue.setLastAccessTime(LocalDateTime.now());
                 }
                 
-                logger.debug("Successfully received message from queue: {}", queueName);
+                logger.debug("Successfully received message from PowerShell MSMQ queue: {}", queueName);
                 return Optional.of(message);
+                
+            } catch (Exception e) {
+                logger.error("Failed to receive message from PowerShell MSMQ queue: {}", queueName, e);
+                throw new MsmqException(ResponseCode.fromCode("611"), "Failed to receive message from PowerShell MSMQ queue: " + queueName, e);
             }
-            
-            return Optional.empty();
             
         } catch (MsmqException e) {
             throw e;
@@ -445,26 +560,39 @@ public class MsmqQueueManager {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
-            // Get message queue
-            Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
-            if (messageQueue == null || messageQueue.isEmpty()) {
-                return Optional.empty();
-            }
+            // Peek message from PowerShell MSMQ queue (using in-memory approach for now)
+            String queuePath = buildQueuePath(queueName);
             
-            // Peek at message
-            MsmqMessage message = messageQueue.peek();
-            if (message != null) {
-                // Update queue last access time
-                MsmqQueue queue = queues.get(queueName);
-                if (queue != null) {
-                    queue.setLastAccessTime(LocalDateTime.now());
+            try {
+                // PowerShell MSMQ doesn't have a direct peek operation
+                // For now, we'll use the in-memory approach as a fallback
+                logger.debug("PowerShell MSMQ peeking not yet implemented, using in-memory fallback");
+                
+                // Get message from local queue as fallback
+                Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
+                if (messageQueue == null || messageQueue.isEmpty()) {
+                    return Optional.empty();
                 }
                 
-                logger.debug("Successfully peeked message from queue: {}", queueName);
-                return Optional.of(message);
+                // Peek at message
+                MsmqMessage message = messageQueue.peek();
+                if (message != null) {
+                    // Update queue last access time
+                    MsmqQueue queue = queues.get(queueName);
+                    if (queue != null) {
+                        queue.setLastAccessTime(LocalDateTime.now());
+                    }
+                    
+                    logger.debug("Successfully peeked message from queue: {} (using in-memory fallback)", queueName);
+                    return Optional.of(message);
+                }
+                
+                return Optional.empty();
+                
+            } catch (Exception e) {
+                logger.error("Failed to peek message from PowerShell MSMQ queue: {}", queueName, e);
+                throw new MsmqException(ResponseCode.fromCode("611"), "Failed to peek message from PowerShell MSMQ queue: " + queueName, e);
             }
-            
-            return Optional.empty();
             
         } catch (MsmqException e) {
             throw e;
@@ -538,6 +666,35 @@ public class MsmqQueueManager {
         } catch (Exception e) {
             logger.error("Failed to get message count for queue: {}", queueName, e);
             throw new MsmqException(ResponseCode.fromCode("611"), "Failed to get message count for queue: " + queueName, e);
+        }
+    }
+    
+    /**
+     * Builds the MSMQ queue path from the queue name.
+     * Converts logical queue names to PowerShell MSMQ path format.
+     * 
+     * @param queueName the logical queue name
+     * @return the MSMQ queue path
+     */
+    private String buildQueuePath(String queueName) {
+        // Handle different queue name formats for PowerShell MSMQ
+        if (queueName.startsWith("private$\\")) {
+            // Remove the private$ prefix since PowerShell will add it automatically
+            return queueName.substring("private$\\".length());
+        } else if (queueName.startsWith("machine$\\")) {
+            // Remove the machine$ prefix since PowerShell will add it automatically
+            return queueName.substring("machine$\\".length());
+        } else if (queueName.startsWith("DIRECT=")) {
+            return queueName; // Direct queue format
+        } else if (queueName.startsWith("FORMATNAME:")) {
+            return queueName; // Format name
+        } else if (queueName.startsWith("OS:")) {
+            return queueName; // OS queue format
+        } else if (queueName.startsWith("HTTP://") || queueName.startsWith("HTTPS://") || queueName.startsWith("SOAP://")) {
+            return queueName; // Web service queue format
+        } else {
+            // Default to just the queue name for PowerShell MSMQ
+            return queueName;
         }
     }
 }
