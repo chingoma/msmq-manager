@@ -155,8 +155,25 @@ public class MsmqQueueManager {
             }
             
             // Store queue in database for tracking
-            // Note: Queue configuration is stored via MsmqQueueSyncService
-            // Messages will be stored in msmq_messages table when sent
+            MsmqQueueConfig queueConfig = new MsmqQueueConfig();
+            queueConfig.setQueueName(queue.getName());
+            queueConfig.setQueuePath(queuePath);
+            queueConfig.setDescription(queue.getDescription());
+            queueConfig.setIsActive(true);
+            queueConfig.setIsPrivate(true); // Default to private queue
+            queueConfig.setIsTransactional(false); // Default to non-transactional
+            queueConfig.setIsAuthenticated(false); // Default to non-authenticated
+            queueConfig.setIsEncrypted(false); // Default to non-encrypted
+            queueConfig.setCreatedAt(LocalDateTime.now());
+            queueConfig.setCreatedBy("System");
+            queueConfig.setRetryCount(3); // Default retry count
+            queueConfig.setRetryIntervalMs(5000L); // Default 5 seconds
+            queueConfig.setTimeoutMs(30000L); // Default 30 seconds
+            queueConfig.setMaxMessageSize(4194304L); // Default 4MB
+            
+            // Save to database
+            msmqQueueConfigRepository.save(queueConfig);
+            logger.debug("Successfully saved queue configuration to database: {}", queue.getName());
             
             logger.debug("Successfully created queue: {} with path: {}", queue.getName(), queuePath);
             return queue;
