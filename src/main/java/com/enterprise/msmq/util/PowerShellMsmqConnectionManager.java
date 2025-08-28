@@ -303,10 +303,10 @@ public class PowerShellMsmqConnectionManager {
                 }
             }
 
-            // Use XmlMessageFormatter consistently for both sending and receiving
-            // Use the simple approach that worked in PowerShell documentation
+            // Use BinaryMessageFormatter to send messages as raw text without HTML entity parsing
+            // This ensures the message content is sent exactly as provided without any encoding/decoding
             String queuePathWithPrefix = ".\\private$\\" + queuePath;
-            String command = "Add-Type -AssemblyName System.Messaging; $queuePath = '" + queuePathWithPrefix + "'; if (-not [System.Messaging.MessageQueue]::Exists($queuePath)) { [System.Messaging.MessageQueue]::Create($queuePath, $true) | Out-Null }; $queue = New-Object System.Messaging.MessageQueue $queuePath; $queue.Formatter = New-Object System.Messaging.XmlMessageFormatter; $queue.Send('" + message.replace("'", "''") + "', 'MSMQ Manager Message'); $queue.Close(); if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' }";
+            String command = "Add-Type -AssemblyName System.Messaging; $queuePath = '" + queuePathWithPrefix + "'; if (-not [System.Messaging.MessageQueue]::Exists($queuePath)) { [System.Messaging.MessageQueue]::Create($queuePath, $true) | Out-Null }; $queue = New-Object System.Messaging.MessageQueue $queuePath; $queue.Formatter = New-Object System.Messaging.BinaryMessageFormatter; $queue.Send('" + message.replace("'", "''") + "', 'MSMQ Manager Message'); $queue.Close(); if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' }";
             
             Process process = Runtime.getRuntime().exec("powershell.exe -Command \"" + command + "\"");
             int exitCode = process.waitFor();
@@ -334,7 +334,56 @@ public class PowerShellMsmqConnectionManager {
                     return false;
                 }
             } else {
-                logger.error("Failed to send message to queue via PowerShell: {}, exit code: {}", queuePath, exitCode);
+                logger.error("Failed to send message to PowerShell: {}, exit code: {}", queuePath, exitCode);
+                return false;
+            }
+
+        } catch (Exception e) {
+            logger.error("Error sending message to queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public boolean sendMessageBackup(String queuePath, String message) {
+        try {
+            if (!isConnected.get()) {
+                if (!connect()) {
+                    return false;
+                }
+            }
+
+            // Use BinaryMessageFormatter to send messages as raw text without HTML entity parsing
+            // This ensures the message content is sent exactly as provided without any encoding/decoding
+            String queuePathWithPrefix = ".\\private$\\" + queuePath;
+            String command = "Add-Type -AssemblyName System.Messaging; $queuePath = '" + queuePathWithPrefix + "'; if (-not [System.Messaging.MessageQueue]::Exists($queuePath)) { [System.Messaging.MessageQueue]::Create($queuePath, $true) | Out-Null }; $queue = New-Object System.Messaging.MessageQueue $queuePath; $queue.Formatter = New-Object System.Messaging.BinaryMessageFormatter; $queue.Send('" + message.replace("'", "''") + "', 'MSMQ Manager Message'); $queue.Close(); if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' }";
+
+            Process process = Runtime.getRuntime().exec("powershell.exe -Command \"" + command + "\"");
+            int exitCode = process.waitFor();
+
+            // Read the output to check for our specific messages
+            String output = "";
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                StringBuilder outputBuilder = new StringBuilder();
+                while ((line = reader.readLine()) != null) {
+                    outputBuilder.append(line).append("\n");
+                }
+                output = outputBuilder.toString().trim();
+            }
+
+            if (exitCode == 0) {
+                if (output.contains("SUCCESS")) {
+                    logger.info("Successfully sent message to queue via PowerShell: {}", queuePath);
+                    return true;
+                } else if (output.contains("FAILED")) {
+                    logger.error("Failed to send message to queue via PowerShell: {}", queuePath);
+                    return false;
+                } else {
+                    logger.warn("Unknown PowerShell output for message sending: {}", output);
+                    return false;
+                }
+            } else {
+                logger.error("Failed to send message to PowerShell: {}, exit code: {}", queuePath, exitCode);
                 return false;
             }
 
