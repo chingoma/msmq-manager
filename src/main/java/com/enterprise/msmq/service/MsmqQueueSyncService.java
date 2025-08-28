@@ -4,9 +4,9 @@ import com.enterprise.msmq.dto.MsmqQueue;
 import com.enterprise.msmq.model.MsmqQueueConfig;
 import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
 import com.enterprise.msmq.util.PowerShellMsmqConnectionManager;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,15 +25,14 @@ import java.util.regex.Pattern;
  * @version 1.0
  */
 @Service
+@RequiredArgsConstructor
 public class MsmqQueueSyncService {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqQueueSyncService.class);
 
-    @Autowired
-    private PowerShellMsmqConnectionManager powerShellMsmqConnectionManager;
+    private final PowerShellMsmqConnectionManager powerShellMsmqConnectionManager;
 
-    @Autowired
-    private MsmqQueueConfigRepository msmqQueueConfigRepository;
+    private final MsmqQueueConfigRepository msmqQueueConfigRepository;
 
     /**
      * Synchronizes MSMQ queues with the application database at startup.

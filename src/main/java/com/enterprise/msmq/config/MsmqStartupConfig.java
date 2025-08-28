@@ -1,10 +1,9 @@
 package com.enterprise.msmq.config;
 
-import com.enterprise.msmq.service.MsmqQueueSyncService;
 import com.enterprise.msmq.util.MsmqQueueManager;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -17,15 +16,12 @@ import org.springframework.stereotype.Component;
  * @version 1.0
  */
 @Component
+@RequiredArgsConstructor
 public class MsmqStartupConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqStartupConfig.class);
 
-    @Autowired
-    private MsmqQueueSyncService msmqQueueSyncService;
-
-    @Autowired
-    private MsmqQueueManager msmqQueueManager;
+    private final MsmqQueueManager msmqQueueManager;
 
     /**
      * Event listener that triggers when the application is ready.

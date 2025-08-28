@@ -6,22 +6,21 @@ import com.enterprise.msmq.exception.MsmqException;
 import com.enterprise.msmq.service.MsmqService;
 import com.enterprise.msmq.util.RequestIdGenerator;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * REST Controller for MSMQ operations.
- * 
+ * <p>
  * This controller exposes all MSMQ operations as REST endpoints.
  * All responses return HTTP 200 status code with business status
  * indicated in the response body through statusCode field.
@@ -34,23 +33,20 @@ import java.util.Optional;
 @RequestMapping("/msmq")
 @Validated
 @CrossOrigin(origins = "*")
+@Tag(name = "MSMQ Management API", description = "API for managing MSMQ operations")
 public class MsmqController {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqController.class);
 
     private final MsmqService msmqService;
 
-    private final RequestIdGenerator requestIdGenerator;
-
     /**
      * Constructor for dependency injection.
      * 
      * @param msmqService the MSMQ service
-     * @param requestIdGenerator the request ID generator
      */
-    public MsmqController(MsmqService msmqService, RequestIdGenerator requestIdGenerator) {
+    public MsmqController(MsmqService msmqService) {
         this.msmqService = msmqService;
-        this.requestIdGenerator = requestIdGenerator;
     }
 
     // Queue Management Endpoints
@@ -64,7 +60,7 @@ public class MsmqController {
     @PostMapping("/queues")
     public ResponseEntity<ApiResponse<MsmqQueue>> createQueue(@Valid @RequestBody MsmqQueue queue) {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.info("Creating queue: {} with request ID: {}", queue.getName(), requestId);
@@ -101,7 +97,7 @@ public class MsmqController {
     @DeleteMapping("/queues/{queueName}")
     public ResponseEntity<ApiResponse<Void>> deleteQueue(@PathVariable @NotBlank String queueName) {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.info("Deleting queue: {} with request ID: {}", queueName, requestId);
@@ -138,7 +134,7 @@ public class MsmqController {
     @GetMapping("/queues/{queueName}")
     public ResponseEntity<ApiResponse<MsmqQueue>> getQueue(@PathVariable @NotBlank String queueName) {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.debug("Retrieving queue: {} with request ID: {}", queueName, requestId);
@@ -173,7 +169,7 @@ public class MsmqController {
     @GetMapping("/queues")
     public ResponseEntity<ApiResponse<List<MsmqQueue>>> listQueues() {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.debug("Listing all queues with request ID: {}", requestId);
@@ -214,7 +210,7 @@ public class MsmqController {
             @PathVariable @NotBlank String queueName,
             @Valid @RequestBody MsmqMessage message) {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.info("Sending message to queue: {} with request ID: {}", queueName, requestId);
@@ -254,7 +250,7 @@ public class MsmqController {
             @PathVariable @NotBlank String queueName,
             @RequestParam(required = false) Long timeout) {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.debug("Receiving message from queue: {} with request ID: {}", queueName, requestId);
@@ -268,12 +264,8 @@ public class MsmqController {
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<MsmqMessage> response;
-            
-            if (receivedMessage.isPresent()) {
-                response = ApiResponse.success("Message received successfully", receivedMessage.get());
-            } else {
-                response = ApiResponse.success("No message available");
-            }
+
+            response = receivedMessage.map(msmqMessage -> ApiResponse.success("Message received successfully", msmqMessage)).orElseGet(() -> ApiResponse.success("No message available"));
             
             response.setRequestId(requestId);
             response.setMetadata(metadata);
@@ -305,7 +297,7 @@ public class MsmqController {
             @PathVariable @NotBlank String queueName,
             @RequestParam(required = false) Long timeout) {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.debug("Peeking message from queue: {} with request ID: {}", queueName, requestId);
@@ -319,12 +311,8 @@ public class MsmqController {
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<MsmqMessage> response;
-            
-            if (peekedMessage.isPresent()) {
-                response = ApiResponse.success("Message peeked successfully", peekedMessage.get());
-            } else {
-                response = ApiResponse.success("No message available");
-            }
+
+            response = peekedMessage.map(msmqMessage -> ApiResponse.success("Message peeked successfully", msmqMessage)).orElseGet(() -> ApiResponse.success("No message available"));
             
             response.setRequestId(requestId);
             response.setMetadata(metadata);
@@ -354,7 +342,7 @@ public class MsmqController {
     @GetMapping("/connection/status")
     public ResponseEntity<ApiResponse<ConnectionStatus>> getConnectionStatus() {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.debug("Getting connection status with request ID: {}", requestId);
@@ -384,7 +372,7 @@ public class MsmqController {
     @PostMapping("/connection/connect")
     public ResponseEntity<ApiResponse<Void>> connect() {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.info("Establishing MSMQ connection with request ID: {}", requestId);
@@ -422,7 +410,7 @@ public class MsmqController {
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<HealthCheckResult>> performHealthCheck() {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.debug("Performing health check with request ID: {}", requestId);
@@ -452,7 +440,7 @@ public class MsmqController {
     @GetMapping("/metrics/performance")
     public ResponseEntity<ApiResponse<PerformanceMetrics>> getPerformanceMetrics() {
         long startTime = System.currentTimeMillis();
-        String requestId = requestIdGenerator.generateRequestId();
+        String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.debug("Getting performance metrics with request ID: {}", requestId);

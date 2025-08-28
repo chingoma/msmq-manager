@@ -2,10 +2,14 @@ package com.enterprise.msmq.util;
 
 import com.enterprise.msmq.dto.MsmqMessage;
 import com.enterprise.msmq.dto.MsmqQueue;
+
 import com.enterprise.msmq.exception.MsmqException;
 import com.enterprise.msmq.platform.windows.MsmqConstants;
 import com.enterprise.msmq.util.PowerShellMsmqConnectionManager;
 import com.enterprise.msmq.service.MsmqQueueSyncService;
+import com.enterprise.msmq.repository.MsmqMessageRepository;
+import com.enterprise.msmq.model.MsmqQueueConfig;
+import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +18,12 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 import com.enterprise.msmq.enums.ResponseCode;
 
 /**
  * MSMQ Queue Manager utility class.
- * 
+ * <p>
  * This class manages MSMQ queue operations including creation,
  * deletion, and message operations.
  * 
@@ -31,16 +36,21 @@ public class MsmqQueueManager {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqQueueManager.class);
 
-    @Autowired
-    private PowerShellMsmqConnectionManager powerShellMsmqConnectionManager;
+    private final PowerShellMsmqConnectionManager powerShellMsmqConnectionManager;
+    private final MsmqQueueSyncService msmqQueueSyncService;
+    private final MsmqMessageRepository msmqMessageRepository;
+    private final MsmqQueueConfigRepository msmqQueueConfigRepository;
 
-    @Autowired
-    private MsmqQueueSyncService msmqQueueSyncService;
-
-    // In-memory storage for queues and messages (will be replaced with real MSMQ operations)
-    private final Map<String, MsmqQueue> queues = new ConcurrentHashMap<>();
-    private final Map<String, Queue<MsmqMessage>> messageQueues = new ConcurrentHashMap<>();
-    private final Map<String, MsmqMessage> messages = new ConcurrentHashMap<>();
+    public MsmqQueueManager(
+            PowerShellMsmqConnectionManager powerShellMsmqConnectionManager,
+            MsmqQueueSyncService msmqQueueSyncService,
+            MsmqMessageRepository msmqMessageRepository,
+            MsmqQueueConfigRepository msmqQueueConfigRepository) {
+        this.powerShellMsmqConnectionManager = powerShellMsmqConnectionManager;
+        this.msmqQueueSyncService = msmqQueueSyncService;
+        this.msmqMessageRepository = msmqMessageRepository;
+        this.msmqQueueConfigRepository = msmqQueueConfigRepository;
+    }
 
     /**
      * Creates a new MSMQ queue.
@@ -120,8 +130,8 @@ public class MsmqQueueManager {
                 }
             }
 
-            // Check if queue already exists
-            if (queues.containsKey(queue.getName())) {
+            // Check if queue already exists in database
+            if (msmqQueueConfigRepository.findByQueueName(queue.getName()).isPresent()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue already exists: " + queue.getName());
             }
             
@@ -144,9 +154,9 @@ public class MsmqQueueManager {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Failed to create MSMQ queue: " + queuePath);
             }
             
-            // Store queue locally for tracking
-            queues.put(queue.getName(), queue);
-            messageQueues.put(queue.getName(), new LinkedList<>());
+            // Store queue in database for tracking
+            // Note: Queue configuration is stored via MsmqQueueSyncService
+            // Messages will be stored in msmq_messages table when sent
             
             logger.debug("Successfully created queue: {} with path: {}", queue.getName(), queuePath);
             return queue;
@@ -170,9 +180,9 @@ public class MsmqQueueManager {
         try {
             logger.debug("Deleting queue: {} (deleteFromMsmq: {})", queueName, deleteFromMsmq);
             
-            // Check if queue exists in app database
-            if (!queues.containsKey(queueName)) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found in application database: " + queueName);
+            // Check if queue exists in database
+            if (!msmqQueueConfigRepository.findByQueueName(queueName).isPresent()) {
+                throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found in database: " + queueName);
             }
             
             // If requested, delete from MSMQ
@@ -188,12 +198,8 @@ public class MsmqQueueManager {
                 logger.debug("Skipping MSMQ deletion for queue: {} (deleteFromMsmq=false)", queueName);
             }
             
-            // Always remove queue and its messages from local storage
-            queues.remove(queueName);
-            messageQueues.remove(queueName);
-            
-            // Remove all messages for this queue
-            messages.entrySet().removeIf(entry -> queueName.equals(entry.getValue().getDestinationQueue()));
+            // Remove all messages for this queue from database
+            msmqMessageRepository.deleteByQueueName(queueName);
             
             logger.debug("Successfully removed queue from application database: {}", queueName);
             
@@ -226,12 +232,21 @@ public class MsmqQueueManager {
         try {
             logger.debug("Retrieving queue: {}", queueName);
             
-            MsmqQueue queue = queues.get(queueName);
-            if (queue == null) {
+            // Check if queue exists in database
+            Optional<MsmqQueueConfig> queueConfig = msmqQueueConfigRepository.findByQueueName(queueName);
+            if (!queueConfig.isPresent()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
-            // Update last access time
+            // Convert MsmqQueueConfig to MsmqQueue DTO
+            MsmqQueueConfig config = queueConfig.get();
+            MsmqQueue queue = new MsmqQueue();
+            queue.setName(config.getQueueName());
+            queue.setPath(config.getQueuePath());
+            queue.setDescription(config.getDescription());
+            queue.setStatus("ACTIVE");
+            queue.setMessageCount(msmqMessageRepository.countByQueueName(queueName));
+            queue.setSize(0L); // TODO: Calculate actual size from messages
             queue.setLastAccessTime(LocalDateTime.now());
             
             return queue;
@@ -252,12 +267,23 @@ public class MsmqQueueManager {
      */
     public List<MsmqQueue> listQueues() throws MsmqException {
         try {
-            logger.debug("Listing all queues");
+            logger.debug("Listing all queues from database");
             
-            List<MsmqQueue> queueList = new ArrayList<>(queues.values());
+            // Get all queues from database
+            List<MsmqQueueConfig> queueConfigs = msmqQueueConfigRepository.findAll();
+            List<MsmqQueue> queueList = new ArrayList<>();
             
-            // Update last access time for all queues
-            queueList.forEach(queue -> queue.setLastAccessTime(LocalDateTime.now()));
+            for (MsmqQueueConfig config : queueConfigs) {
+                MsmqQueue queue = new MsmqQueue();
+                queue.setName(config.getQueueName());
+                queue.setPath(config.getQueuePath());
+                queue.setDescription(config.getDescription());
+                queue.setStatus("ACTIVE");
+                queue.setMessageCount(msmqMessageRepository.countByQueueName(config.getQueueName()));
+                queue.setSize(0L); // TODO: Calculate actual size from messages
+                queue.setLastAccessTime(LocalDateTime.now());
+                queueList.add(queue);
+            }
             
             return queueList;
             
@@ -284,24 +310,11 @@ public class MsmqQueueManager {
             // Call the service to sync queues to database
             msmqQueueSyncService.syncQueuesAtStartup();
             
-            // Get all queues from MSMQ for in-memory sync
-            List<MsmqQueue> msmqQueues = msmqQueueSyncService.getAllQueuesFromMsmq();
-            logger.info("Found {} queues in MSMQ system", msmqQueues.size());
+            // Get count of queues now in database after sync
+            long queueCount = msmqQueueConfigRepository.count();
+            logger.info("Successfully synchronized {} queues from MSMQ to database", queueCount);
             
-            // Clear existing queues from app database (but not from MSMQ)
-            queues.clear();
-            messageQueues.clear();
-            messages.clear();
-            
-            // Add all queues from MSMQ to app database
-            for (MsmqQueue msmqQueue : msmqQueues) {
-                String queueName = msmqQueue.getName();
-                queues.put(queueName, msmqQueue);
-                messageQueues.put(queueName, new LinkedList<>());
-                logger.debug("Synchronized queue: {} from MSMQ", queueName);
-            }
-            
-            logger.info("Successfully synchronized {} queues from MSMQ to application database", msmqQueues.size());
+            logger.debug("Queue synchronization completed - all queues now stored in database");
             
         } catch (Exception e) {
             logger.error("Failed to synchronize queues from MSMQ", e);
@@ -321,31 +334,38 @@ public class MsmqQueueManager {
         try {
             logger.debug("Updating queue: {}", queueName);
             
-            // Check if queue exists
-            if (!queues.containsKey(queueName)) {
+            // Check if queue exists in database
+            Optional<MsmqQueueConfig> existingConfig = msmqQueueConfigRepository.findByQueueName(queueName);
+            if (!existingConfig.isPresent()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
-            // Get existing queue
-            MsmqQueue existingQueue = queues.get(queueName);
+            // Get existing queue config
+            MsmqQueueConfig config = existingConfig.get();
             
             // Update properties
             if (queue.getDescription() != null) {
-                existingQueue.setDescription(queue.getDescription());
-            }
-            if (queue.getMaxMessageCount() != null) {
-                existingQueue.setMaxMessageCount(queue.getMaxMessageCount());
-            }
-            if (queue.getMaxSize() != null) {
-                existingQueue.setMaxSize(queue.getMaxSize());
+                config.setDescription(queue.getDescription());
             }
             
             // Update timestamps
-            existingQueue.setModifiedTime(LocalDateTime.now());
-            existingQueue.setLastAccessTime(LocalDateTime.now());
+            config.setUpdatedAt(LocalDateTime.now());
+            
+            // Save to database
+            MsmqQueueConfig updatedConfig = msmqQueueConfigRepository.save(config);
+            
+            // Convert back to DTO
+            MsmqQueue updatedQueue = new MsmqQueue();
+            updatedQueue.setName(updatedConfig.getQueueName());
+            updatedQueue.setPath(updatedConfig.getQueuePath());
+            updatedQueue.setDescription(updatedConfig.getDescription());
+            updatedQueue.setStatus("ACTIVE");
+            updatedQueue.setMessageCount(msmqMessageRepository.countByQueueName(queueName));
+            updatedQueue.setSize(0L);
+            updatedQueue.setModifiedTime(updatedConfig.getUpdatedAt());
             
             logger.debug("Successfully updated queue: {}", queueName);
-            return existingQueue;
+            return updatedQueue;
             
         } catch (MsmqException e) {
             throw e;
@@ -364,7 +384,7 @@ public class MsmqQueueManager {
      */
     public boolean queueExists(String queueName) throws MsmqException {
         try {
-            return queues.containsKey(queueName);
+            return msmqQueueConfigRepository.findByQueueName(queueName).isPresent();
         } catch (Exception e) {
             logger.error("Failed to check queue existence: {}", queueName, e);
             throw new MsmqException(ResponseCode.fromCode("611"), "Failed to check queue existence: " + queueName, e);
@@ -384,19 +404,16 @@ public class MsmqQueueManager {
             
             MsmqQueue queue = getQueue(queueName);
             
-            // Get message count
-            Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
-            if (messageQueue != null) {
-                queue.setMessageCount((long) messageQueue.size());
-            }
+            // Get message count from database
+            long messageCount = msmqMessageRepository.countByQueueName(queueName);
+            queue.setMessageCount(messageCount);
             
-            // Calculate queue size
+            // Calculate queue size from database
             long totalSize = 0;
-            if (messageQueue != null) {
-                for (MsmqMessage message : messageQueue) {
-                    if (message.getSize() != null) {
-                        totalSize += message.getSize();
-                    }
+            List<com.enterprise.msmq.entity.MsmqMessage> dbMessages = msmqMessageRepository.findByQueueNameOrderByCreatedAtDesc(queueName);
+            for (com.enterprise.msmq.entity.MsmqMessage dbMessage : dbMessages) {
+                if (dbMessage.getMessageSize() != null) {
+                    totalSize += dbMessage.getMessageSize();
                 }
             }
             
@@ -424,8 +441,8 @@ public class MsmqQueueManager {
         try {
             logger.debug("Sending message to queue: {}", queueName);
             
-            // Check if queue exists
-            if (!queues.containsKey(queueName)) {
+            // Check if queue exists in database
+            if (!msmqQueueConfigRepository.findByQueueName(queueName).isPresent()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
@@ -455,19 +472,21 @@ public class MsmqQueueManager {
                     throw new MsmqException(ResponseCode.fromCode("611"), "Failed to send message to PowerShell MSMQ queue: " + queuePath);
                 }
                 
-                // Add message to local queue for tracking
-                Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
-                if (messageQueue != null) {
-                    messageQueue.offer(message);
-                    messages.put(message.getMessageId(), message);
-                }
+                // Store message in database for tracking
+                com.enterprise.msmq.entity.MsmqMessage dbMessage = new com.enterprise.msmq.entity.MsmqMessage();
+                dbMessage.setMessageId(message.getMessageId());
+                dbMessage.setQueueName(queueName);
+                dbMessage.setCorrelationId(message.getCorrelationId());
+                dbMessage.setLabel(message.getLabel());
+                dbMessage.setBody(message.getBody());
+                dbMessage.setPriority(message.getPriority());
+                dbMessage.setMessageSize(message.getSize());
+                dbMessage.setProcessingStatus("SENT");
+                dbMessage.setIsProcessed(true);
                 
-                // Update queue statistics
-                MsmqQueue queue = queues.get(queueName);
-                if (queue != null) {
-                    queue.setMessageCount((long) messageQueue.size());
-                    queue.setLastAccessTime(LocalDateTime.now());
-                }
+                msmqMessageRepository.save(dbMessage);
+                
+                logger.debug("Message stored in database with ID: {}", message.getMessageId());
                 
                 logger.debug("Successfully sent message to PowerShell MSMQ queue: {}", queueName);
                 return message;
@@ -497,8 +516,8 @@ public class MsmqQueueManager {
         try {
             logger.debug("Receiving message from queue: {} with timeout: {}ms", queueName, timeout);
             
-            // Check if queue exists
-            if (!queues.containsKey(queueName)) {
+            // Check if queue exists in database
+            if (!msmqQueueConfigRepository.findByQueueName(queueName).isPresent()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
@@ -521,11 +540,18 @@ public class MsmqQueueManager {
                 message.setStatus("RECEIVED");
                 message.setSize((long) receivedMessage.getBytes().length);
                 
-                // Update queue statistics
-                MsmqQueue queue = queues.get(queueName);
-                if (queue != null) {
-                    queue.setLastAccessTime(LocalDateTime.now());
-                }
+                // Store received message in database for tracking
+                com.enterprise.msmq.entity.MsmqMessage dbMessage = new com.enterprise.msmq.entity.MsmqMessage();
+                dbMessage.setMessageId(message.getMessageId());
+                dbMessage.setQueueName(queueName);
+                dbMessage.setBody(receivedMessage);
+                dbMessage.setMessageSize((long) receivedMessage.getBytes().length);
+                dbMessage.setProcessingStatus("RECEIVED");
+                dbMessage.setIsProcessed(true);
+                
+                msmqMessageRepository.save(dbMessage);
+                
+                logger.debug("Received message stored in database with ID: {}", message.getMessageId());
                 
                 logger.debug("Successfully received message from PowerShell MSMQ queue: {}", queueName);
                 return Optional.of(message);
@@ -555,44 +581,15 @@ public class MsmqQueueManager {
         try {
             logger.debug("Peeking message from queue: {} with timeout: {}ms", queueName, timeout);
             
-            // Check if queue exists
-            if (!queues.containsKey(queueName)) {
+            // Check if queue exists in database
+            if (!msmqQueueConfigRepository.findByQueueName(queueName).isPresent()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
-            // Peek message from PowerShell MSMQ queue (using in-memory approach for now)
-            String queuePath = buildQueuePath(queueName);
-            
-            try {
-                // PowerShell MSMQ doesn't have a direct peek operation
-                // For now, we'll use the in-memory approach as a fallback
-                logger.debug("PowerShell MSMQ peeking not yet implemented, using in-memory fallback");
-                
-                // Get message from local queue as fallback
-                Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
-                if (messageQueue == null || messageQueue.isEmpty()) {
-                    return Optional.empty();
-                }
-                
-                // Peek at message
-                MsmqMessage message = messageQueue.peek();
-                if (message != null) {
-                    // Update queue last access time
-                    MsmqQueue queue = queues.get(queueName);
-                    if (queue != null) {
-                        queue.setLastAccessTime(LocalDateTime.now());
-                    }
-                    
-                    logger.debug("Successfully peeked message from queue: {} (using in-memory fallback)", queueName);
-                    return Optional.of(message);
-                }
-                
-                return Optional.empty();
-                
-            } catch (Exception e) {
-                logger.error("Failed to peek message from PowerShell MSMQ queue: {}", queueName, e);
-                throw new MsmqException(ResponseCode.fromCode("611"), "Failed to peek message from PowerShell MSMQ queue: " + queueName, e);
-            }
+            // PowerShell MSMQ doesn't have a direct peek operation
+            // For now, we'll return empty since we can't peek without removing
+            logger.debug("PowerShell MSMQ peeking not yet implemented - returning empty result");
+            return Optional.empty();
             
         } catch (MsmqException e) {
             throw e;
@@ -612,28 +609,15 @@ public class MsmqQueueManager {
         try {
             logger.debug("Purging queue: {}", queueName);
             
-            // Check if queue exists
-            if (!queues.containsKey(queueName)) {
+            // Check if queue exists in database
+            if (!msmqQueueConfigRepository.findByQueueName(queueName).isPresent()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
-            // Clear message queue
-            Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
-            if (messageQueue != null) {
-                // Remove all messages for this queue from messages map
-                messageQueue.forEach(message -> messages.remove(message.getMessageId()));
-                messageQueue.clear();
-            }
+            // Clear all messages for this queue from database
+            msmqMessageRepository.deleteByQueueName(queueName);
             
-            // Update queue statistics
-            MsmqQueue queue = queues.get(queueName);
-            if (queue != null) {
-                queue.setMessageCount(0L);
-                queue.setSize(0L);
-                queue.setLastAccessTime(LocalDateTime.now());
-            }
-            
-            logger.debug("Successfully purged queue: {}", queueName);
+            logger.debug("Successfully purged all messages from queue: {} in database", queueName);
             
         } catch (MsmqException e) {
             throw e;
@@ -653,13 +637,12 @@ public class MsmqQueueManager {
     public long getMessageCount(String queueName) throws MsmqException {
         try {
             // Check if queue exists
-            if (!queues.containsKey(queueName)) {
+            if (!msmqQueueConfigRepository.findByQueueName(queueName).isPresent()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found: " + queueName);
             }
             
             // Get message count
-            Queue<MsmqMessage> messageQueue = messageQueues.get(queueName);
-            return messageQueue != null ? messageQueue.size() : 0;
+            return msmqMessageRepository.countByQueueName(queueName);
             
         } catch (MsmqException e) {
             throw e;

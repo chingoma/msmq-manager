@@ -4,11 +4,10 @@ import com.enterprise.msmq.entity.MsmqMessageTemplate;
 import com.enterprise.msmq.repository.MsmqMessageTemplateRepository;
 import com.enterprise.msmq.util.MsmqQueueManager;
 import com.enterprise.msmq.dto.MsmqMessage;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -21,16 +20,15 @@ import java.util.regex.Pattern;
  * Service for managing MSMQ Message Templates.
  */
 @Service
+@RequiredArgsConstructor
 public class MsmqMessageTemplateService {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqMessageTemplateService.class);
     private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
 
-    @Autowired
-    private MsmqMessageTemplateRepository templateRepository;
+    private  final MsmqMessageTemplateRepository templateRepository;
 
-    @Autowired
-    private MsmqQueueManager msmqQueueManager;
+    private final MsmqQueueManager msmqQueueManager;
 
     /**
      * Create a new message template.

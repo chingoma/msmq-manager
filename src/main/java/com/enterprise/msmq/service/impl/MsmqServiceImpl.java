@@ -8,19 +8,18 @@ import com.enterprise.msmq.util.MsmqConnectionManager;
 import com.enterprise.msmq.util.MsmqMessageParser;
 import com.enterprise.msmq.util.MsmqQueueManager;
 import com.enterprise.msmq.util.PowerShellMsmqConnectionManager;
+import com.enterprise.msmq.service.RedisMetricsService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.time.LocalDateTime;
 
 /**
  * Implementation of MSMQ Service interface.
- * 
+ * <p>
  * This class contains all the business logic for MSMQ operations including
  * queue management, message operations, and connection management. The implementation
  * follows enterprise best practices with proper error handling, logging, and
@@ -39,13 +38,11 @@ public class MsmqServiceImpl implements MsmqService {
     private final MsmqConnectionManager connectionManager;
     private final MsmqQueueManager queueManager;
     private final MsmqMessageParser messageParser;
+    private final RedisMetricsService redisMetricsService;
 
-    // Performance metrics tracking
-    private final AtomicLong totalMessagesSent = new AtomicLong(0);
-    private final AtomicLong totalMessagesReceived = new AtomicLong(0);
-    private final AtomicLong totalErrors = new AtomicLong(0);
-    private final Map<String, Long> operationTimings = new ConcurrentHashMap<>();
-    private final Map<String, Long> errorCounts = new ConcurrentHashMap<>();
+    // Performance metrics tracking - Now using Redis for persistence and scalability
+    // These track operation performance and error rates for monitoring purposes
+    // Data is stored in Redis with TTL for automatic cleanup
 
     @Override
     public MsmqQueue createQueue(MsmqQueue queue) throws MsmqException {
@@ -337,8 +334,8 @@ public class MsmqServiceImpl implements MsmqService {
             MsmqMessage sentMessage = queueManager.sendMessage(queueName, parsedMessage);
             
             // Update metrics
-            totalMessagesSent.incrementAndGet();
-            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            redisMetricsService.incrementTotalMessageCount("sent");
+            redisMetricsService.storeOperationTiming(operation, System.currentTimeMillis() - startTime);
             logger.info("Successfully sent message to MSMQ queue: {}", queueName);
             
             return sentMessage;
@@ -385,7 +382,7 @@ public class MsmqServiceImpl implements MsmqService {
                 receivedMessage = Optional.of(parsedMessage);
                 
                 // Update metrics
-                totalMessagesReceived.incrementAndGet();
+                redisMetricsService.incrementTotalMessageCount("received");
             }
             
             // Update metrics
@@ -737,9 +734,6 @@ public class MsmqServiceImpl implements MsmqService {
             // Check 3: Database Connection (if applicable)
             try {
                 // This would check database connectivity
-                if (healthCheck.getComponents() == null) {
-                    healthCheck.setComponents(new HashMap<>());
-                }
                 healthCheck.getComponents().put("DATABASE", "HEALTHY");
             } catch (Exception e) {
                 healthCheck.setStatus("UNHEALTHY");
@@ -835,24 +829,24 @@ public class MsmqServiceImpl implements MsmqService {
     }
 
     /**
-     * Updates operation timing metrics.
+     * Updates operation timing metrics in Redis.
      * 
      * @param operation the operation name
      * @param duration the operation duration in milliseconds
      */
     private void updateOperationTiming(String operation, long duration) {
-        operationTimings.put(operation, duration);
+        redisMetricsService.storeOperationTiming(operation, duration);
     }
 
     /**
-     * Handles operation errors and updates metrics.
+     * Handles operation errors and updates metrics in Redis.
      * 
      * @param operation the operation name
      * @param exception the exception that occurred
      */
     private void handleOperationError(String operation, MsmqException exception) {
-        totalErrors.incrementAndGet();
-        errorCounts.merge(operation, 1L, Long::sum);
+        redisMetricsService.incrementTotalMessageCount("errors");
+        redisMetricsService.incrementErrorCount(operation);
         logger.error("Operation {} failed: {}", operation, exception.getMessage(), exception);
     }
 }

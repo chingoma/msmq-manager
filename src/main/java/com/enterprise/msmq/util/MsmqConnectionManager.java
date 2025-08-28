@@ -3,13 +3,14 @@ package com.enterprise.msmq.util;
 import com.enterprise.msmq.dto.ConnectionStatus;
 import com.enterprise.msmq.enums.ResponseCode;
 import com.enterprise.msmq.exception.MsmqException;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Manages MSMQ connection lifecycle and status.
@@ -40,8 +41,7 @@ public class MsmqConnectionManager {
     private ConnectionStatus connectionStatus;
 
     /**
-     * Default constructor.
-     * Initializes connection manager with default settings.
+     * Default constructor for Spring bean instantiation.
      */
     public MsmqConnectionManager() {
         this.host = "localhost";

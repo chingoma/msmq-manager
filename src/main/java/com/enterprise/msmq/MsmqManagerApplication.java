@@ -9,10 +9,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Main Spring Boot Application class for MSMQ Manager.
- * 
+ * <p>
  * This application provides enterprise-grade MSMQ (Microsoft Message Queuing) management
  * capabilities including queue operations, message processing, monitoring, and logging.
- * 
+ * <p>
  * Features:
  * - MSMQ queue read/write operations
  * - Connection and session management

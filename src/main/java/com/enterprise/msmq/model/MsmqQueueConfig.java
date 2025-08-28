@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
  * @version 1.0
  */
 @Entity
-@Table(name = "msmq_queue_configs")
+@Table(name = "msmq_queue_config")
 public class MsmqQueueConfig {
 
     @Id
