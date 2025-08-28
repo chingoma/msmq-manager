@@ -303,10 +303,28 @@ public class PowerShellMsmqConnectionManager {
                 }
             }
 
-            // Use BinaryMessageFormatter to send messages as raw text without HTML entity parsing
-            // This ensures the message content is sent exactly as provided without any encoding/decoding
+            // Use ActiveXMessageFormatter to send messages as raw text without any parsing or encoding
+            // This ensures the message content is sent exactly as provided - perfect for XML and plain text
             String queuePathWithPrefix = ".\\private$\\" + queuePath;
-            String command = "Add-Type -AssemblyName System.Messaging; $queuePath = '" + queuePathWithPrefix + "'; if (-not [System.Messaging.MessageQueue]::Exists($queuePath)) { [System.Messaging.MessageQueue]::Create($queuePath, $true) | Out-Null }; $queue = New-Object System.Messaging.MessageQueue $queuePath; $queue.Formatter = New-Object System.Messaging.BinaryMessageFormatter; $queue.Send('" + message.replace("'", "''") + "', 'MSMQ Manager Message'); $queue.Close(); if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' }";
+            
+            // Escape the message properly for PowerShell to preserve formatting
+            String escapedMessage = message
+                .replace("\\", "\\\\")
+                .replace("'", "''")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
+            
+            String command = "Add-Type -AssemblyName System.Messaging; " +
+                "$queuePath = '" + queuePathWithPrefix + "'; " +
+                "if (-not [System.Messaging.MessageQueue]::Exists($queuePath)) { " +
+                "    [System.Messaging.MessageQueue]::Create($queuePath, $true) | Out-Null " +
+                "}; " +
+                "$queue = New-Object System.Messaging.MessageQueue $queuePath; " +
+                "$queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
+                "$queue.Send('" + escapedMessage + "', 'MSMQ Manager Message'); " +
+                "$queue.Close(); " +
+                "if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' }";
             
             Process process = Runtime.getRuntime().exec("powershell.exe -Command \"" + command + "\"");
             int exitCode = process.waitFor();
@@ -352,10 +370,29 @@ public class PowerShellMsmqConnectionManager {
                 }
             }
 
-            // Use BinaryMessageFormatter to send messages as raw text without HTML entity parsing
-            // This ensures the message content is sent exactly as provided without any encoding/decoding
+            // Use ActiveXMessageFormatter to send messages as raw text without any parsing or encoding
+            // This ensures the message content is sent exactly as provided - perfect for XML and plain text
             String queuePathWithPrefix = ".\\private$\\" + queuePath;
-            String command = "Add-Type -AssemblyName System.Messaging; $queuePath = '" + queuePathWithPrefix + "'; if (-not [System.Messaging.MessageQueue]::Exists($queuePath)) { [System.Messaging.MessageQueue]::Create($queuePath, $true) | Out-Null }; $queue = New-Object System.Messaging.MessageQueue $queuePath; $queue.Formatter = New-Object System.Messaging.BinaryMessageFormatter; $queue.Send('" + message.replace("'", "''") + "', 'MSMQ Manager Message'); $queue.Close(); if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' }";
+            
+            // Escape the message properly for PowerShell to preserve formatting
+            // Use simple escaping instead of here-string syntax for better compatibility
+            String escapedMessage = message
+                .replace("\\", "\\\\")
+                .replace("'", "''")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
+            
+            String command = "Add-Type -AssemblyName System.Messaging; " +
+                "$queuePath = '" + queuePathWithPrefix + "'; " +
+                "if (-not [System.Messaging.MessageQueue]::Exists($queuePath)) { " +
+                "    [System.Messaging.MessageQueue]::Create($queuePath, $true) | Out-Null " +
+                "}; " +
+                "$queue = New-Object System.Messaging.MessageQueue $queuePath; " +
+                "$queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
+                "$queue.Send('" + escapedMessage + "', 'MSMQ Manager Message'); " +
+                "$queue.Close(); " +
+                "if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' }";
 
             Process process = Runtime.getRuntime().exec("powershell.exe -Command \"" + command + "\"");
             int exitCode = process.waitFor();
@@ -401,9 +438,10 @@ public class PowerShellMsmqConnectionManager {
                 }
             }
 
-            // Use XmlMessageFormatter consistently for both sending and receiving
+            // Use ActiveXMessageFormatter consistently for both sending and receiving
+            // This ensures messages are handled as raw text without any parsing or encoding
             String queuePathWithPrefix = ".\\private$\\" + queuePath;
-            String command = "Add-Type -AssemblyName System.Messaging; $queuePath = '" + queuePathWithPrefix + "'; $queue = New-Object System.Messaging.MessageQueue $queuePath; $queue.Formatter = New-Object System.Messaging.XmlMessageFormatter; $msg = $queue.Receive([System.Messaging.MessageQueueTransactionType]::Single); if ($msg) { Write-Host 'BODY:' $msg.Body; Write-Host 'LABEL:' $msg.Label; Write-Host 'PRIORITY:' $msg.Priority; Write-Host 'CORRELATIONID:' $msg.CorrelationId; Write-Host 'MESSAGEID:' $msg.Id; Write-Host 'SUCCESS' } else { Write-Host 'NO_MESSAGE' }; $queue.Close()";
+            String command = "Add-Type -AssemblyName System.Messaging; $queuePath = '" + queuePathWithPrefix + "'; $queue = New-Object System.Messaging.MessageQueue $queuePath; $queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; $msg = $queue.Receive([System.Messaging.MessageQueueTransactionType]::Single); if ($msg) { Write-Host 'BODY:' $msg.Body; Write-Host 'LABEL:' $msg.Label; Write-Host 'PRIORITY:' $msg.Priority; Write-Host 'CORRELATIONID:' $msg.CorrelationId; Write-Host 'MESSAGEID:' $msg.Id; Write-Host 'SUCCESS' } else { Write-Host 'NO_MESSAGE' }; $queue.Close()";
             
             Process process = Runtime.getRuntime().exec("powershell.exe -Command \"" + command + "\"");
             int exitCode = process.waitFor();

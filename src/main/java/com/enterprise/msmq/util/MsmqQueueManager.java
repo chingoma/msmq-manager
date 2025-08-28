@@ -149,10 +149,7 @@ public class MsmqQueueManager {
             
             // Create queue in PowerShell MSMQ
             boolean msmqCreated = powerShellMsmqConnectionManager.createQueue(queuePath);
-            
-            if (!msmqCreated) {
-                throw new MsmqException(ResponseCode.fromCode("611"), "Failed to create MSMQ queue: " + queuePath);
-            }
+
             
             // Store queue in database for tracking
             MsmqQueueConfig queueConfig = new MsmqQueueConfig();
@@ -176,6 +173,12 @@ public class MsmqQueueManager {
             logger.debug("Successfully saved queue configuration to database: {}", queue.getName());
             
             logger.debug("Successfully created queue: {} with path: {}", queue.getName(), queuePath);
+
+
+            if (!msmqCreated) {
+                throw new MsmqException(ResponseCode.fromCode("611"), "Failed to create MSMQ queue: " + queuePath);
+            }
+
             return queue;
             
         } catch (MsmqException e) {
