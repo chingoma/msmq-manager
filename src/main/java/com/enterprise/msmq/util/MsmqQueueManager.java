@@ -4,20 +4,16 @@ import com.enterprise.msmq.dto.MsmqMessage;
 import com.enterprise.msmq.dto.MsmqQueue;
 
 import com.enterprise.msmq.exception.MsmqException;
-import com.enterprise.msmq.platform.windows.MsmqConstants;
-import com.enterprise.msmq.util.PowerShellMsmqConnectionManager;
 import com.enterprise.msmq.service.MsmqQueueSyncService;
 import com.enterprise.msmq.repository.MsmqMessageRepository;
 import com.enterprise.msmq.model.MsmqQueueConfig;
 import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import com.enterprise.msmq.enums.ResponseCode;
 
@@ -36,17 +32,17 @@ public class MsmqQueueManager {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqQueueManager.class);
 
-    private final PowerShellMsmqConnectionManager powerShellMsmqConnectionManager;
+    private final PowerShellMsmqQueueManager powerShellMsmqQueueManager;
     private final MsmqQueueSyncService msmqQueueSyncService;
     private final MsmqMessageRepository msmqMessageRepository;
     private final MsmqQueueConfigRepository msmqQueueConfigRepository;
 
     public MsmqQueueManager(
-            PowerShellMsmqConnectionManager powerShellMsmqConnectionManager,
+            PowerShellMsmqQueueManager powerShellMsmqQueueManager,
             MsmqQueueSyncService msmqQueueSyncService,
             MsmqMessageRepository msmqMessageRepository,
             MsmqQueueConfigRepository msmqQueueConfigRepository) {
-        this.powerShellMsmqConnectionManager = powerShellMsmqConnectionManager;
+        this.powerShellMsmqQueueManager = powerShellMsmqQueueManager;
         this.msmqQueueSyncService = msmqQueueSyncService;
         this.msmqMessageRepository = msmqMessageRepository;
         this.msmqQueueConfigRepository = msmqQueueConfigRepository;
@@ -148,7 +144,7 @@ public class MsmqQueueManager {
             queue.setSize(0L);
             
             // Create queue in PowerShell MSMQ
-            boolean msmqCreated = powerShellMsmqConnectionManager.createQueue(queuePath);
+            boolean msmqCreated = powerShellMsmqQueueManager.createQueue(queuePath);
 
             
             // Store queue in database for tracking
@@ -201,14 +197,14 @@ public class MsmqQueueManager {
             logger.debug("Deleting queue: {} (deleteFromMsmq: {})", queueName, deleteFromMsmq);
             
             // Check if queue exists in database
-            if (!msmqQueueConfigRepository.findByQueueName(queueName).isPresent()) {
+            if (msmqQueueConfigRepository.findByQueueName(queueName).isEmpty()) {
                 throw new MsmqException(ResponseCode.fromCode("611"), "Queue not found in database: " + queueName);
             }
             
             // If requested, delete from MSMQ
             if (deleteFromMsmq) {
                 String queuePath = buildQueuePath(queueName);
-                boolean msmqDeleted = powerShellMsmqConnectionManager.deleteQueue(queuePath);
+                boolean msmqDeleted = powerShellMsmqQueueManager.deleteQueue(queuePath);
                 
                 if (!msmqDeleted) {
                     throw new MsmqException(ResponseCode.fromCode("611"), "Failed to delete MSMQ queue: " + queuePath);
@@ -486,7 +482,7 @@ public class MsmqQueueManager {
             
             try {
                 // Use PowerShell MSMQ to send message
-                boolean messageSent = powerShellMsmqConnectionManager.sendMessage(queuePath, message.getBody());
+                boolean messageSent = powerShellMsmqQueueManager.sendMessage(queuePath, message.getBody());
                 
                 if (!messageSent) {
                     throw new MsmqException(ResponseCode.fromCode("611"), "Failed to send message to PowerShell MSMQ queue: " + queuePath);
@@ -546,7 +542,7 @@ public class MsmqQueueManager {
             
             try {
                 // Use PowerShell MSMQ to receive message
-                String receivedMessage = powerShellMsmqConnectionManager.receiveMessage(queuePath);
+                String receivedMessage = powerShellMsmqQueueManager.receiveMessage(queuePath);
                 
                 if (receivedMessage == null || receivedMessage.isEmpty()) {
                     return Optional.empty();

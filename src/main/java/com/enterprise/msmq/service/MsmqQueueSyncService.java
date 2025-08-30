@@ -3,7 +3,6 @@ package com.enterprise.msmq.service;
 import com.enterprise.msmq.dto.MsmqQueue;
 import com.enterprise.msmq.model.MsmqQueueConfig;
 import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
-import com.enterprise.msmq.util.PowerShellMsmqConnectionManager;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +29,6 @@ public class MsmqQueueSyncService {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqQueueSyncService.class);
 
-    private final PowerShellMsmqConnectionManager powerShellMsmqConnectionManager;
-
     private final MsmqQueueConfigRepository msmqQueueConfigRepository;
 
     /**
@@ -46,12 +43,12 @@ public class MsmqQueueSyncService {
             logger.info("Starting MSMQ queue synchronization at startup...");
             
             // Ensure connection to MSMQ
-            if (!powerShellMsmqConnectionManager.isConnected()) {
-                if (!powerShellMsmqConnectionManager.connect()) {
-                    logger.error("Failed to connect to MSMQ during startup sync");
-                    return;
-                }
-            }
+//            if (!powerShellMsmqConnectionManager.isConnected()) {
+//                if (!powerShellMsmqConnectionManager.connect()) {
+//                    logger.error("Failed to connect to MSMQ during startup sync");
+//                    return;
+//                }
+//            }
 
             // Get all queues from MSMQ
             List<MsmqQueue> msmqQueues = getAllQueuesFromMsmq();

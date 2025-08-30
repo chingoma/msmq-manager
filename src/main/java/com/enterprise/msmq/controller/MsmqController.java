@@ -3,7 +3,7 @@ package com.enterprise.msmq.controller;
 import com.enterprise.msmq.dto.*;
 import com.enterprise.msmq.enums.ResponseCode;
 import com.enterprise.msmq.exception.MsmqException;
-import com.enterprise.msmq.service.MsmqService;
+import com.enterprise.msmq.service.contracts.IMsmqService;
 import com.enterprise.msmq.util.RequestIdGenerator;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,15 +38,15 @@ public class MsmqController {
 
     private static final Logger logger = LoggerFactory.getLogger(MsmqController.class);
 
-    private final MsmqService msmqService;
+    private final IMsmqService IMsmqService;
 
     /**
      * Constructor for dependency injection.
      * 
-     * @param msmqService the MSMQ service
+     * @param IMsmqService the MSMQ service
      */
-    public MsmqController(MsmqService msmqService) {
-        this.msmqService = msmqService;
+    public MsmqController(IMsmqService IMsmqService) {
+        this.IMsmqService = IMsmqService;
     }
 
     // Queue Management Endpoints
@@ -65,7 +65,7 @@ public class MsmqController {
         try {
             logger.info("Creating queue: {} with request ID: {}", queue.getName(), requestId);
             
-            MsmqQueue createdQueue = msmqService.createQueue(queue);
+            MsmqQueue createdQueue = IMsmqService.createQueue(queue);
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<MsmqQueue> response = ApiResponse.success("Queue created successfully", createdQueue);
@@ -102,7 +102,7 @@ public class MsmqController {
         try {
             logger.info("Deleting queue: {} with request ID: {}", queueName, requestId);
             
-            msmqService.deleteQueue(queueName);
+            IMsmqService.deleteQueue(queueName);
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<Void> response = ApiResponse.success("Queue deleted successfully");
@@ -139,7 +139,7 @@ public class MsmqController {
         try {
             logger.debug("Retrieving queue: {} with request ID: {}", queueName, requestId);
             
-            MsmqQueue queue = msmqService.getQueue(queueName);
+            MsmqQueue queue = IMsmqService.getQueue(queueName);
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<MsmqQueue> response = ApiResponse.success("Queue retrieved successfully", queue);
@@ -174,7 +174,7 @@ public class MsmqController {
         try {
             logger.debug("Listing all queues with request ID: {}", requestId);
             
-            List<MsmqQueue> queues = msmqService.listQueues();
+            List<MsmqQueue> queues = IMsmqService.listQueues();
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<List<MsmqQueue>> response = ApiResponse.success("Queues retrieved successfully", queues);
@@ -215,7 +215,7 @@ public class MsmqController {
         try {
             logger.info("Sending message to queue: {} with request ID: {}", queueName, requestId);
             
-            MsmqMessage sentMessage = msmqService.sendMessage(queueName, message);
+            MsmqMessage sentMessage = IMsmqService.sendMessage(queueName, message);
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<MsmqMessage> response = ApiResponse.success("Message sent successfully", sentMessage);
@@ -257,9 +257,9 @@ public class MsmqController {
             
             Optional<MsmqMessage> receivedMessage;
             if (timeout != null) {
-                receivedMessage = msmqService.receiveMessage(queueName, timeout);
+                receivedMessage = IMsmqService.receiveMessage(queueName, timeout);
             } else {
-                receivedMessage = msmqService.receiveMessage(queueName);
+                receivedMessage = IMsmqService.receiveMessage(queueName);
             }
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
@@ -304,9 +304,9 @@ public class MsmqController {
             
             Optional<MsmqMessage> peekedMessage;
             if (timeout != null) {
-                peekedMessage = msmqService.peekMessage(queueName, timeout);
+                peekedMessage = IMsmqService.peekMessage(queueName, timeout);
             } else {
-                peekedMessage = msmqService.peekMessage(queueName);
+                peekedMessage = IMsmqService.peekMessage(queueName);
             }
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
@@ -347,7 +347,7 @@ public class MsmqController {
         try {
             logger.debug("Getting connection status with request ID: {}", requestId);
             
-            ConnectionStatus status = msmqService.getConnectionStatus();
+            ConnectionStatus status = IMsmqService.getConnectionStatus();
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<ConnectionStatus> response = ApiResponse.success("Connection status retrieved successfully", status);
@@ -377,7 +377,7 @@ public class MsmqController {
         try {
             logger.info("Establishing MSMQ connection with request ID: {}", requestId);
             
-            msmqService.connect();
+            IMsmqService.connect();
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<Void> response = ApiResponse.success("Connection established successfully");
@@ -415,7 +415,7 @@ public class MsmqController {
         try {
             logger.debug("Performing health check with request ID: {}", requestId);
             
-            HealthCheckResult healthCheck = msmqService.performHealthCheck();
+            HealthCheckResult healthCheck = IMsmqService.performHealthCheck();
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<HealthCheckResult> response = ApiResponse.success("Health check completed successfully", healthCheck);
@@ -445,7 +445,7 @@ public class MsmqController {
         try {
             logger.debug("Getting performance metrics with request ID: {}", requestId);
             
-            PerformanceMetrics metrics = msmqService.getPerformanceMetrics();
+            PerformanceMetrics metrics = IMsmqService.getPerformanceMetrics();
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<PerformanceMetrics> response = ApiResponse.success("Performance metrics retrieved successfully", metrics);

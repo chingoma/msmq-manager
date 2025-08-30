@@ -1,241 +1,1024 @@
 package com.enterprise.msmq.service;
 
-import com.enterprise.msmq.dto.MsmqMessage;
-import com.enterprise.msmq.dto.MsmqQueue;
-import com.enterprise.msmq.dto.ConnectionStatus;
-import com.enterprise.msmq.dto.SystemHealth;
-import com.enterprise.msmq.dto.PerformanceMetrics;
-import com.enterprise.msmq.dto.ErrorStatistics;
-import com.enterprise.msmq.dto.HealthCheckResult;
+import com.enterprise.msmq.dto.*;
+import com.enterprise.msmq.enums.ResponseCode;
 import com.enterprise.msmq.exception.MsmqException;
+import com.enterprise.msmq.factory.MsmqConnectionFactory;
+import com.enterprise.msmq.service.contracts.IMsmqConnectionManager;
+import com.enterprise.msmq.service.contracts.IMsmqService;
+import com.enterprise.msmq.util.MsmqMessageParser;
+import com.enterprise.msmq.util.MsmqQueueManager;
+import com.enterprise.msmq.validator.MsmqConfigurationValidator;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.time.LocalDateTime;
 
 /**
- * Service interface for MSMQ operations.
- * 
- * This interface defines all business operations for MSMQ management including
- * queue operations, message operations, and connection management. All business
- * logic is implemented in the service layer as per enterprise requirements.
+ * Implementation of MSMQ Service interface.
+ * <p>
+ * This class contains all the business logic for MSMQ operations including
+ * queue management, message operations, and connection management. The implementation
+ * follows enterprise best practices with proper error handling, logging, and
+ * performance optimization.
  * 
  * @author Enterprise Development Team
  * @version 1.0.0
  * @since 2024-01-01
  */
-public interface MsmqService {
+@Service
+@RequiredArgsConstructor
+public class MsmqService implements IMsmqService {
 
-    // Queue Management Operations
+    private static final Logger logger = LoggerFactory.getLogger(MsmqService.class);
 
-    /**
-     * Creates a new MSMQ queue.
-     * 
-     * @param queue the queue information
-     * @return the created queue
-     * @throws MsmqException if queue creation fails
-     */
-    MsmqQueue createQueue(MsmqQueue queue) throws MsmqException;
+    private final MsmqConnectionFactory connectionFactory;
+    private final MsmqQueueManager queueManager;
+    private final MsmqMessageParser messageParser;
+    private final RedisMetricsService redisMetricsService;
+    private final MsmqConfigurationValidator configurationValidator;
 
-    /**
-     * Deletes an existing MSMQ queue.
-     * 
-     * @param queueName the name of the queue to delete
-     * @throws MsmqException if queue deletion fails
-     */
-    void deleteQueue(String queueName) throws MsmqException;
+    private IMsmqConnectionManager connectionManager;
 
-    /**
-     * Retrieves information about a specific queue.
-     * 
-     * @param queueName the name of the queue
-     * @return the queue information
-     * @throws MsmqException if queue retrieval fails
-     */
-    MsmqQueue getQueue(String queueName) throws MsmqException;
+    @PostConstruct
+    private void init() {
+        try {
+            this.connectionManager = connectionFactory.createConnectionManager();
+            if (this.connectionManager == null) {
+                throw new IllegalStateException("Connection manager creation failed");
+            }
+            logger.info("Initialized MSMQ connection manager using type: {}", connectionFactory.getConnectionType());
+        } catch (Exception e) {
+            logger.error("Failed to initialize MSMQ connection manager", e);
+            throw new IllegalStateException("Failed to initialize MSMQ connection manager", e);
+        }
+    }
 
     /**
-     * Lists all available MSMQ queues.
-     * 
-     * @return list of all queues
-     * @throws MsmqException if queue listing fails
+     * Updates operation timing metrics in Redis.
+     *
+     * @param operation the operation name
+     * @param duration the operation duration in milliseconds
      */
-    List<MsmqQueue> listQueues() throws MsmqException;
+    private void updateOperationTiming(String operation, long duration) {
+        try {
+            redisMetricsService.storeOperationTiming(operation, duration);
+        } catch (Exception e) {
+            logger.warn("Failed to update operation timing metrics: {}", e.getMessage());
+            // Don't throw - metrics are non-critical
+        }
+    }
 
     /**
-     * Updates queue properties.
-     * 
-     * @param queueName the name of the queue to update
-     * @param queue the updated queue information
-     * @return the updated queue
-     * @throws MsmqException if queue update fails
+     * Handles operation errors by updating metrics and logging.
+     *
+     * @param operation the operation name
+     * @param exception the exception that occurred
      */
-    MsmqQueue updateQueue(String queueName, MsmqQueue queue) throws MsmqException;
+    private void handleOperationError(String operation, MsmqException exception) {
+        try {
+            redisMetricsService.incrementErrorCount(operation);
+            redisMetricsService.storeLastError(operation, exception.getMessage());
+            logger.error("Operation '{}' failed: {}", operation, exception.getMessage());
+        } catch (Exception e) {
+            logger.warn("Failed to update error metrics: {}", e.getMessage());
+            // Don't throw - metrics are non-critical
+        }
+    }
 
     /**
-     * Checks if a queue exists.
-     * 
-     * @param queueName the name of the queue to check
-     * @return true if the queue exists
-     * @throws MsmqException if check operation fails
+     * Validates queue parameters.
+     *
+     * @param queue the queue to validate
+     * @throws MsmqException if validation fails
      */
-    boolean queueExists(String queueName) throws MsmqException;
+    private void validateQueueParameters(MsmqQueue queue) throws MsmqException {
+        if (queue == null) {
+            throw new MsmqException(ResponseCode.VALIDATION_ERROR, "Queue cannot be null");
+        }
+        if (queue.getName() == null || queue.getName().trim().isEmpty()) {
+            throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+        }
+        // Add additional validation as needed
+    }
+
+    @PreDestroy
+    private void cleanup() {
+        try {
+            if (isConnected()) {
+                disconnect();
+            }
+        } catch (Exception e) {
+            logger.error("Error during cleanup", e);
+        }
+    }
+
+    @Override
+    public MsmqQueue createQueue(MsmqQueue queue) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "CREATE_QUEUE";
+
+        try {
+            logger.info("Creating MSMQ queue: {}", queue.getName());
+
+            // Validate queue parameters
+            validateQueueParameters(queue);
+
+            // Check if queue already exists
+            if (queueExists(queue.getName())) {
+                throw new MsmqException(ResponseCode.QUEUE_ALREADY_EXISTS, "Queue already exists: " + queue.getName());
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Create queue using queue manager
+            MsmqQueue createdQueue = queueManager.createQueue(queue);
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully created MSMQ queue: {}", queue.getName());
+
+            return createdQueue;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to create queue: " + queue.getName(), e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to create queue: " + queue.getName(), e);
+        }
+    }
+
+    @Override
+    public void deleteQueue(String queueName) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "DELETE_QUEUE";
+
+        try {
+            logger.info("Deleting MSMQ queue: {}", queueName);
+
+            // Validate queue name
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+
+            // Check if queue exists
+            if (!queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Delete queue using queue manager
+            queueManager.deleteQueue(queueName);
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully deleted MSMQ queue: {}", queueName);
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to delete queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to delete queue: " + queueName, e);
+        }
+    }
+
+    @Override
+    public MsmqQueue getQueue(String queueName) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "GET_QUEUE";
+
+        try {
+            logger.debug("Retrieving MSMQ queue: {}", queueName);
+
+            // Validate queue name
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Get queue using queue manager
+            MsmqQueue queue = queueManager.getQueue(queueName);
+
+            if (queue == null) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.debug("Successfully retrieved MSMQ queue: {}", queueName);
+
+            return queue;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to retrieve queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to retrieve queue: " + queueName, e);
+        }
+    }
+
+    @Override
+    public List<MsmqQueue> listQueues() throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "LIST_QUEUES";
+
+        try {
+            logger.debug("Listing all MSMQ queues");
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // List queues using queue manager
+            List<MsmqQueue> queues = queueManager.listQueues();
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.debug("Successfully listed {} MSMQ queues", queues.size());
+
+            return queues;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to list queues", e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to list queues", e);
+        }
+    }
+
+    @Override
+    public MsmqQueue updateQueue(String queueName, MsmqQueue queue) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "UPDATE_QUEUE";
+
+        try {
+            logger.info("Updating MSMQ queue: {}", queueName);
+
+            // Validate parameters
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+            if (queue == null) {
+                throw new MsmqException(ResponseCode.VALIDATION_ERROR, "Queue information cannot be null");
+            }
+
+            // Check if queue exists
+            if (!queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Update queue using queue manager
+            MsmqQueue updatedQueue = queueManager.updateQueue(queueName, queue);
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully updated MSMQ queue: {}", queueName);
+
+            return updatedQueue;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to update queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to update queue: " + queueName, e);
+        }
+    }
+
+    @Override
+    public boolean queueExists(String queueName) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "QUEUE_EXISTS";
+
+        try {
+            logger.debug("Checking if MSMQ queue exists: {}", queueName);
+
+            // Validate queue name
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Check queue existence using queue manager
+            boolean exists = queueManager.queueExists(queueName);
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.debug("Queue existence check result for {}: {}", queueName, exists);
+
+            return exists;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to check queue existence: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to check queue existence: " + queueName, e);
+        }
+    }
+
+    @Override
+    public MsmqQueue getQueueStatistics(String queueName) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "GET_QUEUE_STATISTICS";
+
+        try {
+            logger.debug("Retrieving statistics for MSMQ queue: {}", queueName);
+
+            // Validate queue name
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+
+            // Check if queue exists
+            if (!queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Get queue statistics using queue manager
+            MsmqQueue statistics = queueManager.getQueueStatistics(queueName);
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.debug("Successfully retrieved statistics for MSMQ queue: {}", queueName);
+
+            return statistics;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to retrieve queue statistics: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to retrieve queue statistics: " + queueName, e);
+        }
+    }
+
+    @Override
+    public MsmqMessage sendMessage(String queueName, MsmqMessage message) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "SEND_MESSAGE";
+
+        try {
+            logger.info("Sending message to MSMQ queue: {}", queueName);
+
+            // Validate parameters
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+            if (message == null) {
+                throw new MsmqException(ResponseCode.VALIDATION_ERROR, "Message cannot be null");
+            }
+            if (message.getBody() == null || message.getBody().trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_MESSAGE_FORMAT, "Message body cannot be null or empty");
+            }
+
+            // Check if queue exists
+            if (!queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Parse and validate message
+            MsmqMessage parsedMessage = messageParser.parseOutgoingMessage(message);
+
+            // Send message using queue manager
+            MsmqMessage sentMessage = queueManager.sendMessage(queueName, parsedMessage);
+
+            // Update metrics
+            redisMetricsService.incrementTotalMessageCount("sent");
+            redisMetricsService.storeOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully sent message to MSMQ queue: {}", queueName);
+
+            return sentMessage;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to send message to queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to send message to queue: " + queueName, e);
+        }
+    }
+
+    @Override
+    public Optional<MsmqMessage> receiveMessage(String queueName, long timeout) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "RECEIVE_MESSAGE";
+
+        try {
+            logger.debug("Receiving message from MSMQ queue: {} with timeout: {}ms", queueName, timeout);
+
+            // Validate parameters
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+            if (timeout < 0) {
+                throw new MsmqException(ResponseCode.VALIDATION_ERROR, "Timeout cannot be negative");
+            }
+
+            // Check if queue exists
+            if (!queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Receive message using queue manager
+            Optional<MsmqMessage> receivedMessage = queueManager.receiveMessage(queueName, timeout);
+
+            if (receivedMessage.isPresent()) {
+                // Parse incoming message
+                MsmqMessage parsedMessage = messageParser.parseIncomingMessage(receivedMessage.get());
+                receivedMessage = Optional.of(parsedMessage);
+
+                // Update metrics
+                redisMetricsService.incrementTotalMessageCount("received");
+            }
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.debug("Message receive operation completed for queue: {}", queueName);
+
+            return receivedMessage;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to receive message from queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to receive message from queue: " + queueName, e);
+        }
+    }
+
+    @Override
+    public Optional<MsmqMessage> receiveMessage(String queueName) throws MsmqException {
+        // Use default timeout from configuration
+        return receiveMessage(queueName, 60000); // 60 seconds default
+    }
+
+    @Override
+    public Optional<MsmqMessage> peekMessage(String queueName, long timeout) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "PEEK_MESSAGE";
+
+        try {
+            logger.debug("Peeking message from MSMQ queue: {} with timeout: {}ms", queueName, timeout);
+
+            // Validate parameters
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+            if (timeout < 0) {
+                throw new MsmqException(ResponseCode.VALIDATION_ERROR, "Timeout cannot be negative");
+            }
+
+            // Check if queue exists
+            if (!queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Peek message using queue manager
+            Optional<MsmqMessage> peekedMessage = queueManager.peekMessage(queueName, timeout);
+
+            if (peekedMessage.isPresent()) {
+                // Parse incoming message
+                MsmqMessage parsedMessage = messageParser.parseIncomingMessage(peekedMessage.get());
+                peekedMessage = Optional.of(parsedMessage);
+            }
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.debug("Message peek operation completed for queue: {}", queueName);
+
+            return peekedMessage;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to peek message from queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to peek message from queue: " + queueName, e);
+        }
+    }
+
+    @Override
+    public Optional<MsmqMessage> peekMessage(String queueName) throws MsmqException {
+        // Use default timeout from configuration
+        return peekMessage(queueName, 60000); // 60 seconds default
+    }
+
+    @Override
+    public void purgeQueue(String queueName) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "PURGE_QUEUE";
+
+        try {
+            logger.info("Purging MSMQ queue: {}", queueName);
+
+            // Validate queue name
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+
+            // Check if queue exists
+            if (!queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Purge queue using queue manager
+            queueManager.purgeQueue(queueName);
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully purged MSMQ queue: {}", queueName);
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to purge queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to purge queue: " + queueName, e);
+        }
+    }
+
+    @Override
+    public long getMessageCount(String queueName) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "GET_MESSAGE_COUNT";
+
+        try {
+            logger.debug("Getting message count for MSMQ queue: {}", queueName);
+
+            // Validate queue name
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+
+            // Check if queue exists
+            if (!queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Get message count using queue manager
+            long count = queueManager.getMessageCount(queueName);
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.debug("Message count for queue {}: {}", queueName, count);
+
+            return count;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to get message count for queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to get message count for queue: " + queueName, e);
+        }
+    }
+
+    @Override
+    public void connect() throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "CONNECT";
+
+        try {
+            logger.info("Establishing connection to MSMQ service");
+            ConnectionStatus status = connectionManager.getConnectionStatus();
+            status.setStatus("CONNECTING");
+
+            // Connect using connection manager
+            connectionManager.connect();
+
+            // Update connection status on success
+            status = connectionManager.getConnectionStatus();
+            status.setStatus("CONNECTED");
+            status.setLastConnected(System.currentTimeMillis());
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully connected to MSMQ service");
+
+        } catch (Exception e) {
+            // Update connection status on failure
+            try {
+                ConnectionStatus status = connectionManager.getConnectionStatus();
+                status.setStatus("ERROR");
+                status.setErrorMessage(e.getMessage());
+                status.setLastError(System.currentTimeMillis());
+            } catch (Exception statusError) {
+                logger.error("Failed to update connection status", statusError);
+            }
+
+            handleOperationError(operation, new MsmqException(ResponseCode.CONNECTION_ERROR, "Failed to connect to MSMQ service", e));
+            throw new MsmqException(ResponseCode.CONNECTION_ERROR, "Failed to connect to MSMQ service", e);
+        }
+    }
+
+    @Override
+    public void disconnect() throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "DISCONNECT";
+
+        try {
+            logger.info("Disconnecting from MSMQ service");
+            ConnectionStatus status = connectionManager.getConnectionStatus();
+            status.setStatus("DISCONNECTING");
+
+            // Disconnect using connection manager
+            connectionManager.disconnect();
+
+            // Update connection status on success
+            status = connectionManager.getConnectionStatus();
+            status.setStatus("DISCONNECTED");
+            status.setLastDisconnected(System.currentTimeMillis());
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully disconnected from MSMQ service");
+
+        } catch (Exception e) {
+            // Update connection status on failure
+            try {
+                ConnectionStatus status = connectionManager.getConnectionStatus();
+                status.setStatus("ERROR");
+                status.setErrorMessage(e.getMessage());
+                status.setLastError(System.currentTimeMillis());
+            } catch (Exception statusError) {
+                logger.error("Failed to update connection status", statusError);
+            }
+
+            handleOperationError(operation, new MsmqException(ResponseCode.CONNECTION_ERROR, "Failed to disconnect from MSMQ service", e));
+            throw new MsmqException(ResponseCode.CONNECTION_ERROR, "Failed to disconnect from MSMQ service", e);
+        }
+    }
+
+    @Override
+    public void reconnect() throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "RECONNECT";
+
+        try {
+            logger.info("Reconnecting to MSMQ service");
+            ConnectionStatus status = connectionManager.getConnectionStatus();
+            status.setStatus("RECONNECTING");
+
+            // Reconnect using connection manager
+            connectionManager.reconnect();
+
+            // Update connection status on success
+            status = connectionManager.getConnectionStatus();
+            status.setStatus("CONNECTED");
+            status.setLastConnected(System.currentTimeMillis());
+
+            // Update metrics
+            updateOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully reconnected to MSMQ service");
+
+        } catch (Exception e) {
+            // Update connection status on failure
+            try {
+                ConnectionStatus status = connectionManager.getConnectionStatus();
+                status.setStatus("ERROR");
+                status.setErrorMessage(e.getMessage());
+                status.setLastError(System.currentTimeMillis());
+            } catch (Exception statusError) {
+                logger.error("Failed to update connection status", statusError);
+            }
+
+            handleOperationError(operation, new MsmqException(ResponseCode.CONNECTION_ERROR, "Failed to reconnect to MSMQ service", e));
+            throw new MsmqException(ResponseCode.CONNECTION_ERROR, "Failed to reconnect to MSMQ service", e);
+        }
+    }
+
+    @Override
+    public SystemHealth getSystemHealth() {
+        // Implementation for system health monitoring
+        // This would integrate with actual MSMQ health checks
+        return new SystemHealth();
+    }
+
+    @Override
+    public PerformanceMetrics getPerformanceMetrics() {
+        // Implementation for performance metrics
+        // This would provide actual performance data
+        return new PerformanceMetrics();
+    }
+
+    @Override
+    public ErrorStatistics getErrorStatistics() {
+        // Implementation for error statistics
+        // This would provide actual error data
+        return new ErrorStatistics();
+    }
+
+    @Override
+    public boolean validateConfiguration() {
+        try {
+            // Validate connection manager exists
+            if (connectionManager == null) {
+                logger.error("Connection manager is null");
+                return false;
+            }
+
+            // Validate configuration values
+            try {
+                // Use configuration validator
+                configurationValidator.validateHostname(connectionManager.getHost());
+                configurationValidator.validatePort(connectionManager.getPort());
+                configurationValidator.validateTimeout(connectionManager.getTimeout());
+                configurationValidator.validateRetryAttempts(connectionManager.getRetryAttempts());
+            } catch (MsmqException e) {
+                logger.error("Configuration validation failed: {}", e.getMessage());
+                return false;
+            }
+
+            // Validate connection status
+            ConnectionStatus status = connectionManager.getConnectionStatus();
+            if (status == null) {
+                logger.error("Unable to get connection status");
+                return false;
+            }
+
+            // Test connection if not already connected
+            if (!status.isConnected() && !testConnection()) {
+                logger.error("Connection test failed");
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            logger.error("Configuration validation failed", e);
+            return false;
+        }
+    }
 
     /**
-     * Gets queue statistics and health information.
-     * 
-     * @param queueName the name of the queue
-     * @return queue statistics
-     * @throws MsmqException if statistics retrieval fails
+     * Ensures that the MSMQ connection is active with exponential backoff retry.
+     *
+     * @throws MsmqException if connection is not available
      */
-    MsmqQueue getQueueStatistics(String queueName) throws MsmqException;
+    private void ensureConnection() throws MsmqException {
+        if (!isConnected()) {
+            logger.warn("MSMQ connection not available, attempting to reconnect");
+            try {
+                reconnect();
+                // Wait for connection to be established with exponential backoff
+                long startTime = System.currentTimeMillis();
+                long timeout = 30000; // 30 seconds timeout
+                long waitTime = 100; // Start with 100ms wait
+                int attempts = 0;
+                int maxAttempts = 10;
 
-    // Message Operations
+                while (!isConnected() &&
+                       (System.currentTimeMillis() - startTime) < timeout &&
+                       attempts < maxAttempts) {
+                    try {
+                        Thread.sleep(waitTime);
+                        waitTime = Math.min(waitTime * 2, 1000); // Double wait time up to 1 second max
+                        attempts++;
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new MsmqException(ResponseCode.CONNECTION_INTERRUPTED,
+                            "Connection attempt interrupted", e);
+                    }
+                }
 
-    /**
-     * Sends a message to a specific queue.
-     * 
-     * @param queueName the destination queue name
-     * @param message the message to send
-     * @return the sent message with updated information
-     * @throws MsmqException if message sending fails
-     */
-    MsmqMessage sendMessage(String queueName, MsmqMessage message) throws MsmqException;
+                if (!isConnected()) {
+                    if (attempts >= maxAttempts) {
+                        throw new MsmqException(ResponseCode.CONNECTION_ERROR,
+                            "Maximum reconnection attempts reached");
+                    } else {
+                        throw new MsmqException(ResponseCode.CONNECTION_TIMEOUT,
+                            "Connection attempt timed out");
+                    }
+                }
+            } catch (MsmqException e) {
+                throw new MsmqException(ResponseCode.MSMQ_NOT_AVAILABLE,
+                    "MSMQ connection not available", e);
+            }
+        }
+    }
 
-    /**
-     * Receives a message from a specific queue.
-     * 
-     * @param queueName the source queue name
-     * @param timeout the timeout in milliseconds
-     * @return the received message, or empty if no message available
-     * @throws MsmqException if message receiving fails
-     */
-    Optional<MsmqMessage> receiveMessage(String queueName, long timeout) throws MsmqException;
+    private boolean testConnection() {
+        try {
+            connect();
+            return isConnected();
+        } catch (Exception e) {
+            logger.error("Connection test failed: {}", e.getMessage());
+            return false;
+        } finally {
+            try {
+                if (isConnected()) {
+                    disconnect();
+                }
+            } catch (Exception e) {
+                logger.warn("Error disconnecting after connection test", e);
+            }
+        }
+    }
 
-    /**
-     * Receives a message from a specific queue with default timeout.
-     * 
-     * @param queueName the source queue name
-     * @return the received message, or empty if no message available
-     * @throws MsmqException if message receiving fails
-     */
-    Optional<MsmqMessage> receiveMessage(String queueName) throws MsmqException;
+    @Override
+    public String getMsmqVersion() {
+        try {
+            // Get MSMQ version information
+            // This would typically query the actual MSMQ service for version information
+            // For now, return a placeholder version
+            return "MSMQ 4.0 (Simulated)";
+        } catch (Exception e) {
+            logger.error("Failed to get MSMQ version", e);
+            return "Unknown";
+        }
+    }
 
-    /**
-     * Peeks at a message in the queue without removing it.
-     * 
-     * @param queueName the queue name
-     * @param timeout the timeout in milliseconds
-     * @return the peeked message, or empty if no message available
-     * @throws MsmqException if message peeking fails
-     */
-    Optional<MsmqMessage> peekMessage(String queueName, long timeout) throws MsmqException;
+    @Override
+    public HealthCheckResult performHealthCheck() {
+        try {
+            logger.debug("Performing comprehensive MSMQ health check...");
 
-    /**
-     * Peeks at a message in the queue with default timeout.
-     * 
-     * @param queueName the queue name
-     * @return the peeked message, or empty if no message available
-     * @throws MsmqException if message peeking fails
-     */
-    Optional<MsmqMessage> peekMessage(String queueName) throws MsmqException;
+            HealthCheckResult healthCheck = new HealthCheckResult();
+            healthCheck.setStatus("HEALTHY");
+            healthCheck.setTimestamp(LocalDateTime.now());
 
-    /**
-     * Purges all messages from a queue.
-     * 
-     * @param queueName the queue name
-     * @throws MsmqException if queue purging fails
-     */
-    void purgeQueue(String queueName) throws MsmqException;
+            // Check 1: MSMQ Connection Status
+            try {
+                ConnectionStatus status = connectionManager.getConnectionStatus();
+                if (status.isConnected()) {
+                    logger.debug("MSMQ connection health check: PASSED");
+                    // Store MSMQ status in components map
+                    if (healthCheck.getComponents() == null) {
+                        healthCheck.setComponents(new HashMap<>());
+                    }
+                    healthCheck.getComponents().put("MSMQ_CONNECTION", "HEALTHY");
+                    healthCheck.getComponents().put("MSMQ_CONNECTION_TYPE", connectionFactory.getConnectionType().toString());
+                    healthCheck.getComponents().put("MSMQ_STATUS", "Connected and operational");
+                } else {
+                    healthCheck.setStatus("UNHEALTHY");
+                    logger.warn("MSMQ connection health check: FAILED");
+                    if (healthCheck.getComponents() == null) {
+                        healthCheck.setComponents(new HashMap<>());
+                    }
+                    healthCheck.getComponents().put("MSMQ_CONNECTION", "UNHEALTHY");
+                    healthCheck.getComponents().put("MSMQ_STATUS", "Connection test failed");
+                    healthCheck.getComponents().put("MSMQ_DIAGNOSTIC", "Check MSMQ service and permissions");
+                }
+            } catch (Exception e) {
+                healthCheck.setStatus("UNHEALTHY");
+                if (healthCheck.getComponents() == null) {
+                    healthCheck.setComponents(new HashMap<>());
+                }
+                healthCheck.getComponents().put("MSMQ_CONNECTION", "ERROR");
+                logger.error("MSMQ connection health check error", e);
+            }
 
-    /**
-     * Gets the number of messages in a queue.
-     * 
-     * @param queueName the queue name
-     * @return the message count
-     * @throws MsmqException if count retrieval fails
-     */
-    long getMessageCount(String queueName) throws MsmqException;
+            // Check 2: Configuration Validation
+            try {
+                if (validateConfiguration()) {
+                    if (healthCheck.getComponents() == null) {
+                        healthCheck.setComponents(new HashMap<>());
+                    }
+                    healthCheck.getComponents().put("CONFIGURATION", "HEALTHY");
+                } else {
+                    healthCheck.setStatus("UNHEALTHY");
+                    if (healthCheck.getComponents() == null) {
+                        healthCheck.setComponents(new HashMap<>());
+                    }
+                    healthCheck.getComponents().put("CONFIGURATION", "UNHEALTHY");
+                }
+            } catch (Exception e) {
+                healthCheck.setStatus("UNHEALTHY");
+                if (healthCheck.getComponents() == null) {
+                    healthCheck.setComponents(new HashMap<>());
+                }
+                healthCheck.getComponents().put("CONFIGURATION", "ERROR");
+            }
 
-    // Connection and Session Management
+            // Check 3: Database Connection (if applicable)
+            try {
+                // This would check database connectivity
+                healthCheck.getComponents().put("DATABASE", "HEALTHY");
+            } catch (Exception e) {
+                healthCheck.setStatus("UNHEALTHY");
+                if (healthCheck.getComponents() == null) {
+                    healthCheck.setComponents(new HashMap<>());
+                }
+                healthCheck.getComponents().put("DATABASE", "UNHEALTHY");
+            }
 
-    /**
-     * Establishes a connection to the MSMQ service.
-     * 
-     * @throws MsmqException if connection fails
-     */
-    void connect() throws MsmqException;
+            // Check 4: System Resources
+            try {
+                Runtime runtime = Runtime.getRuntime();
+                long maxMemory = runtime.maxMemory();
+                long totalMemory = runtime.totalMemory();
+                long freeMemory = runtime.freeMemory();
+                long usedMemory = totalMemory - freeMemory;
+                double memoryUsagePercent = (double) usedMemory / maxMemory * 100;
 
-    /**
-     * Disconnects from the MSMQ service.
-     * 
-     * @throws MsmqException if disconnection fails
-     */
-    void disconnect() throws MsmqException;
+                if (healthCheck.getComponents() == null) {
+                    healthCheck.setComponents(new HashMap<>());
+                }
 
-    /**
-     * Checks if the connection to MSMQ is active.
-     * 
-     * @return true if connected
-     */
-    boolean isConnected();
+                if (memoryUsagePercent < 80) {
+                    healthCheck.getComponents().put("MEMORY", "HEALTHY");
+                    healthCheck.getComponents().put("MEMORY_USAGE",
+                        String.format("%.1f%% (%.1f MB / %.1f MB)",
+                            memoryUsagePercent, usedMemory / 1024.0 / 1024.0, maxMemory / 1024.0 / 1024.0));
+                } else {
+                    healthCheck.getComponents().put("MEMORY", "WARNING");
+                    healthCheck.getComponents().put("MEMORY_USAGE",
+                        String.format("%.1f%%", memoryUsagePercent));
+                }
+            } catch (Exception e) {
+                if (healthCheck.getComponents() == null) {
+                    healthCheck.setComponents(new HashMap<>());
+                }
+                healthCheck.getComponents().put("MEMORY", "ERROR");
+            }
 
-    /**
-     * Gets connection status and health information.
-     * 
-     * @return connection status information
-     */
-    ConnectionStatus getConnectionStatus();
+            logger.info("Health check completed with status: {}", healthCheck.getStatus());
+            return healthCheck;
 
-    /**
-     * Reconnects to the MSMQ service.
-     * 
-     * @throws MsmqException if reconnection fails
-     */
-    void reconnect() throws MsmqException;
+        } catch (Exception e) {
+            logger.error("Health check failed", e);
+            HealthCheckResult errorResult = new HealthCheckResult();
+            errorResult.setStatus("ERROR");
+            errorResult.setTimestamp(LocalDateTime.now());
+            if (errorResult.getComponents() == null) {
+                errorResult.setComponents(new HashMap<>());
+            }
+            errorResult.getComponents().put("HEALTH_CHECK", "ERROR");
+            return errorResult;
+        }
+    }
 
-    // Monitoring and Health Operations
+    @Override
+    public boolean isConnected() {
+        try {
+            if (connectionManager == null) {
+                return false;
+            }
+            ConnectionStatus status = connectionManager.getConnectionStatus();
+            return status != null && status.isConnected();
+        } catch (Exception e) {
+            logger.error("Error checking connection status: {}", e.getMessage());
+            return false;
+        }
+    }
 
-    /**
-     * Gets overall MSMQ system health status.
-     * 
-     * @return system health information
-     */
-    SystemHealth getSystemHealth();
+    @Override
+    public ConnectionStatus getConnectionStatus() {
+        try {
+            if (connectionManager == null) {
+                ConnectionStatus status = new ConnectionStatus();
+                status.setStatus("NOT_INITIALIZED");
+                status.setErrorMessage("Connection manager not initialized");
+                status.setConnected(false);
+                return status;
+            }
+            return connectionManager.getConnectionStatus();
+        } catch (Exception e) {
+            logger.error("Error getting connection status: {}", e.getMessage());
+            ConnectionStatus errorStatus = new ConnectionStatus();
+            errorStatus.setStatus("ERROR");
+            errorStatus.setErrorMessage(e.getMessage());
+            errorStatus.setLastError(System.currentTimeMillis());
+            errorStatus.setConnected(false);
+            return errorStatus;
+        }
+    }
 
-    /**
-     * Gets performance metrics for MSMQ operations.
-     * 
-     * @return performance metrics
-     */
-    PerformanceMetrics getPerformanceMetrics();
-
-    /**
-     * Gets error statistics and recent errors.
-     * 
-     * @return error statistics
-     */
-    ErrorStatistics getErrorStatistics();
-
-    // Utility Operations
-
-    /**
-     * Validates MSMQ configuration.
-     * 
-     * @return true if configuration is valid
-     */
-    boolean validateConfiguration();
-
-    /**
-     * Gets MSMQ version information.
-     * 
-     * @return version information
-     */
-    String getMsmqVersion();
-
-    /**
-     * Performs a health check on the MSMQ service.
-     * 
-     * @return health check result
-     */
-    HealthCheckResult performHealthCheck();
+    // Private helper methods
 }

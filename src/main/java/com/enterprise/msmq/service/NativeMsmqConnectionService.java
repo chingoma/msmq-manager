@@ -1,7 +1,11 @@
-package com.enterprise.msmq.util;
+package com.enterprise.msmq.service;
 
+import com.enterprise.msmq.dto.ConnectionStatus;
+import com.enterprise.msmq.enums.ResponseCode;
+import com.enterprise.msmq.exception.MsmqException;
 import com.enterprise.msmq.platform.windows.MsmqNativeInterface;
 import com.enterprise.msmq.platform.windows.MsmqConstants;
+import com.enterprise.msmq.service.contracts.IMsmqConnectionManager;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 import org.slf4j.Logger;
@@ -11,11 +15,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
 
 @Component
-public class RealMsmqConnectionManager {
+public class NativeMsmqConnectionService implements IMsmqConnectionManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(RealMsmqConnectionManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(NativeMsmqConnectionService.class);
 
     @Value("${msmq.connection.host:localhost}")
     private String msmqHost;
@@ -23,34 +28,45 @@ public class RealMsmqConnectionManager {
     @Value("${msmq.connection.port:1801}")
     private int msmqPort;
 
-    @Value("${msmq.connection.timeout:30000}")
-    private int connectionTimeout;
-
     @Value("${msmq.connection.retry-attempts:3}")
     private int retryAttempts;
 
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
-    private final ConcurrentHashMap<String, Pointer> queueHandles = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> lastActivity = new ConcurrentHashMap<>();
 
-    public boolean connect() {
+    /**
+     * Map to store queue handles for open queues.
+     */
+    private final Map<String, Pointer> queueHandles = new ConcurrentHashMap<>();
+
+    /**
+     * Establishes a connection to the MSMQ service.
+     *
+     * @throws MsmqException if connection fails
+     */
+    @Override
+    public void connect() throws MsmqException {
+        logger.info("Establishing connection to MSMQ service at {}:{}", msmqHost, msmqPort);
+
         for (int attempt = 1; attempt <= retryAttempts; attempt++) {
             try {
-                logger.info("Connection attempt {} of {} to MSMQ service at {}:{}", attempt, retryAttempts, msmqHost, msmqPort);
+                logger.info("Connection attempt {} of {} to MSMQ service at {}:{}",
+                    attempt, retryAttempts, msmqHost, msmqPort);
+
                 if (testConnection()) {
                     isConnected.set(true);
                     logger.info("Successfully connected to MSMQ service at {}:{}", msmqHost, msmqPort);
-                    return true;
+                    return;
                 }
             } catch (Exception e) {
                 logger.error("Attempt {} failed: {}", attempt, e.getMessage());
                 if (attempt == retryAttempts) {
                     logger.error("Failed to establish connection to MSMQ service at {}:{}", msmqHost, msmqPort);
-                    return false;
+                    throw new MsmqException(ResponseCode.CONNECTION_ERROR,
+                        "Failed to establish connection to MSMQ service", e);
                 }
             }
         }
-        return false;
+        throw new MsmqException(ResponseCode.CONNECTION_ERROR, "Failed to establish connection to MSMQ service");
     }
 
     private boolean testConnection() {
@@ -59,7 +75,8 @@ public class RealMsmqConnectionManager {
 
             // Test 1: Verify native library can be loaded
             try {
-                MsmqNativeInterface.INSTANCE.getClass();
+                // Just checking if accessing INSTANCE throws an exception
+                MsmqNativeInterface.INSTANCE.toString();
                 logger.debug("MSMQ native library loaded successfully");
             } catch (Exception e) {
                 logger.error("Failed to load MSMQ native library: {}", e.getMessage(), e);
@@ -80,113 +97,119 @@ public class RealMsmqConnectionManager {
                 if (handle != null) {
                     MsmqNativeInterface.INSTANCE.MQDeleteQueue(testQueuePath);
                     logger.debug("MSMQ connection test successful - test queue created and deleted");
-                    return true;
-                } else {
-                    logger.error("MSMQ queue created but handle is null for path: {}", testQueuePath);
-                    logger.debug("Falling back to test existing queue");
-                    return testExistingQueue();
                 }
+                return true;
             } else if (result == MsmqConstants.MQ_ERROR_ACCESS_DENIED) {
                 logger.debug("MSMQ connection test successful - service responding but access denied");
                 return true; // Service is responding
             } else if (result == MsmqConstants.MQ_ERROR_INVALID_PARAMETER) {
                 logger.error("MSMQ service responding but invalid parameter for queue path: {}", testQueuePath);
-                logger.debug("Falling back to test existing queue");
-                return testExistingQueue();
+                return true;
             } else {
                 logger.error("MSMQ connection test failed with error code: 0x{}", Integer.toHexString(result));
-                logger.debug("Falling back to test existing queue");
-                return testExistingQueue();
+                return false;
             }
 
         } catch (Exception e) {
             logger.error("MSMQ connection test failed: {}", e.getMessage(), e);
-            logger.debug("Falling back to test existing queue");
-            return testExistingQueue();
+            return false;
         }
     }
 
+    /**
+     * Returns whether the service is currently connected.
+     *
+     * @return true if connected, false otherwise
+     */
+    @Override
     public boolean isConnected() {
         return isConnected.get();
     }
 
-    public String getMsmqHost() {
-        return msmqHost;
-    }
-
-    public int getMsmqPort() {
-        return msmqPort;
-    }
-
+    /**
+     * Gets the current connection status information.
+     *
+     * @return connection status details
+     */
+    @Override
     public ConnectionStatus getConnectionStatus() {
         ConnectionStatus status = new ConnectionStatus();
         status.setConnected(isConnected.get());
-        status.setHost(msmqHost);
-        status.setPort(msmqPort);
-        status.setTimeout(connectionTimeout);
-        status.setRetryAttempts(retryAttempts);
-        status.setQueueHandleCount(queueHandles.size());
-        status.setLastActivity(lastActivity.isEmpty() ? 0L :
-                lastActivity.values().stream().mapToLong(Long::longValue).max().orElse(0L));
+        status.setStatus(isConnected.get() ? "CONNECTED" : "DISCONNECTED");
+        status.setRetryCount(0); // Reset count since we're just checking status
 
         if (!isConnected.get()) {
-            status.setConnectionTestResult(testConnection());
-        } else {
-            status.setConnectionTestResult(true);
+            boolean testResult = testConnection();
+            if (testResult) {
+                status.setStatus("AVAILABLE");
+            } else {
+                status.setStatus("UNAVAILABLE");
+            }
         }
 
         return status;
     }
 
-    public static class ConnectionStatus {
-        private boolean connected;
-        private String host;
-        private int port;
-        private int timeout;
-        private int retryAttempts;
-        private int queueHandleCount;
-        private long lastActivity;
-        private boolean connectionTestResult;
-
-        public boolean isConnected() { return connected; }
-        public void setConnected(boolean connected) { this.connected = connected; }
-
-        public String getHost() { return host; }
-        public void setHost(String host) { this.host = host; }
-
-        public int getPort() { return port; }
-        public void setPort(int port) { this.port = port; }
-
-        public int getTimeout() { return timeout; }
-        public void setTimeout(int timeout) { this.timeout = timeout; }
-
-        public int getRetryAttempts() { return retryAttempts; }
-        public void setRetryAttempts(int retryAttempts) { this.retryAttempts = retryAttempts; }
-
-        public int getQueueHandleCount() { return queueHandleCount; }
-        public void setQueueHandleCount(int queueHandleCount) { this.queueHandleCount = queueHandleCount; }
-
-        public long getLastActivity() { return lastActivity; }
-        public void setLastActivity(long lastActivity) { this.lastActivity = lastActivity; }
-
-        public boolean isConnectionTestResult() { return connectionTestResult; }
-        public void setConnectionTestResult(boolean connectionTestResult) { this.connectionTestResult = connectionTestResult; }
-    }
-
-    public void disconnect() {
+    /**
+     * Disconnects from the MSMQ service.
+     *
+     * @throws MsmqException if disconnection fails
+     */
+    @Override
+    public void disconnect() throws MsmqException {
         try {
             queueHandles.keySet().forEach(this::closeQueue);
             isConnected.set(false);
             logger.info("Disconnected from MSMQ service");
         } catch (Exception e) {
             logger.error("Error disconnecting from MSMQ service: {}", e.getMessage(), e);
+            throw new MsmqException(ResponseCode.CONNECTION_ERROR,
+                "Failed to disconnect from MSMQ service", e);
+        }
+    }
+
+    /**
+     * Reconnects to the MSMQ service by disconnecting and connecting again.
+     *
+     * @throws MsmqException if reconnection fails
+     */
+    @Override
+    public void reconnect() throws MsmqException {
+        logger.info("Reconnecting to MSMQ service");
+
+        try {
+            // Disconnect first if already connected
+            if (isConnected.get()) {
+                disconnect();
+            }
+
+            // Wait briefly before reconnecting
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new MsmqException(ResponseCode.CONNECTION_ERROR, "Reconnection interrupted", e);
+            }
+
+            // Attempt to connect
+            connect();
+
+            logger.info("Successfully reconnected to MSMQ service");
+
+        } catch (Exception e) {
+            logger.error("Failed to reconnect to MSMQ service: {}", e.getMessage(), e);
+            throw new MsmqException(ResponseCode.CONNECTION_ERROR,
+                "Failed to reconnect to MSMQ service", e);
         }
     }
 
     public boolean createQueue(String queuePath) {
         try {
             if (!isConnected.get()) {
-                if (!connect()) {
+                try {
+                    connect();
+                } catch (MsmqException e) {
+                    logger.error("Failed to connect while creating queue: {}", e.getMessage());
                     return false;
                 }
             }
@@ -211,59 +234,6 @@ public class RealMsmqConnectionManager {
         }
     }
 
-    public boolean deleteQueue(String queuePath) {
-        try {
-            closeQueue(queuePath);
-
-            String formattedPath = ".\\private$\\" + queuePath.replace("private$\\", "");
-            int result = MsmqNativeInterface.INSTANCE.MQDeleteQueue(formattedPath);
-
-            if (result == MsmqNativeInterface.MQ_OK) {
-                logger.info("Successfully deleted queue: {}", formattedPath);
-                return true;
-            } else {
-                logger.error("Failed to delete queue: {}, error code: 0x{}", formattedPath, Integer.toHexString(result));
-                return false;
-            }
-
-        } catch (Exception e) {
-            logger.error("Error deleting queue {}: {}", queuePath, e.getMessage(), e);
-            return false;
-        }
-    }
-
-    public Pointer openQueue(String queuePath, int access, int shareMode) {
-        try {
-            if (!isConnected.get()) {
-                logger.warn("MSMQ not connected, attempting to reconnect");
-                if (!connect()) {
-                    return null;
-                }
-            }
-
-            String formattedPath = ".\\private$\\" + queuePath.replace("private$\\", "");
-            PointerByReference queueHandleRef = new PointerByReference();
-            int result = MsmqNativeInterface.INSTANCE.MQOpenQueue(
-                    formattedPath, access, shareMode, queueHandleRef
-            );
-
-            if (result == MsmqNativeInterface.MQ_OK) {
-                Pointer handle = queueHandleRef.getValue();
-                queueHandles.put(formattedPath, handle);
-                lastActivity.put(formattedPath, System.currentTimeMillis());
-                logger.debug("Successfully opened queue: {} with handle: {}", formattedPath, handle);
-                return handle;
-            } else {
-                logger.error("Failed to open queue: {}, error code: 0x{}", formattedPath, Integer.toHexString(result));
-                return null;
-            }
-
-        } catch (Exception e) {
-            logger.error("Error opening queue {}: {}", queuePath, e.getMessage(), e);
-            return null;
-        }
-    }
-
     public void closeQueue(String queuePath) {
         try {
             Pointer handle = queueHandles.get(queuePath);
@@ -271,7 +241,6 @@ public class RealMsmqConnectionManager {
                 int result = MsmqNativeInterface.INSTANCE.MQCloseQueue(handle);
                 if (result == MsmqNativeInterface.MQ_OK) {
                     queueHandles.remove(queuePath);
-                    lastActivity.remove(queuePath);
                     logger.debug("Successfully closed queue: {}", queuePath);
                 } else {
                     logger.error("Failed to close queue: {}, error code: 0x{}", queuePath, Integer.toHexString(result));
@@ -304,7 +273,7 @@ public class RealMsmqConnectionManager {
 
             for (String pathFormat : pathFormats) {
                 logger.debug("Trying path format: {}", pathFormat);
-                
+
                 PointerByReference queueHandleRef = new PointerByReference();
                 int result = MsmqNativeInterface.INSTANCE.MQOpenQueue(
                         pathFormat,
@@ -347,15 +316,52 @@ public class RealMsmqConnectionManager {
      * @return A string description of the error
      */
     private String getMsmqErrorDescription(int errorCode) {
-        switch (errorCode) {
-            case MsmqConstants.MQ_ERROR_ILLEGAL_QUEUE_PATHNAME:
-                return "MQ_ERROR_ILLEGAL_QUEUE_PATHNAME - Illegal queue pathname";
-            case MsmqConstants.MQ_ERROR_ACCESS_DENIED:
-                return "MQ_ERROR_ACCESS_DENIED - Access denied";
-            case MsmqConstants.MQ_ERROR_INVALID_PARAMETER:
-                return "MQ_ERROR_INVALID_PARAMETER - Invalid parameter";
-            default:
-                return "Unknown MSMQ error";
-        }
+        return switch (errorCode) {
+            case MsmqConstants.MQ_ERROR_ILLEGAL_QUEUE_PATHNAME -> "MQ_ERROR_ILLEGAL_QUEUE_PATHNAME - Illegal queue pathname";
+            case MsmqConstants.MQ_ERROR_ACCESS_DENIED -> "MQ_ERROR_ACCESS_DENIED - Access denied";
+            case MsmqConstants.MQ_ERROR_INVALID_PARAMETER -> "MQ_ERROR_INVALID_PARAMETER - Invalid parameter";
+            default -> "Unknown MSMQ error";
+        };
+    }
+
+    /**
+     * Gets the number of retry attempts for connection.
+     *
+     * @return The number of retry attempts.
+     */
+    @Override
+    public int getRetryAttempts() {
+        return retryAttempts;
+    }
+
+    /**
+     * Gets the host configuration for the MSMQ service.
+     *
+     * @return the configured host
+     */
+    @Override
+    public String getHost() {
+        return msmqHost;
+    }
+
+    /**
+     * Gets the port configuration for the MSMQ service.
+     *
+     * @return the configured port
+     */
+    @Override
+    public int getPort() {
+        return msmqPort;
+    }
+
+    /**
+     * Gets the connection timeout configuration.
+     *
+     * @return the configured timeout in milliseconds
+     */
+    @Override
+    public int getTimeout() {
+        return 30000; // Default timeout for native implementation
     }
 }
+

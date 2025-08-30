@@ -46,7 +46,7 @@ public class MonitoringAspect {
     /**
      * Pointcut for all service methods.
      */
-    @Pointcut("execution(* com.enterprise.msmq.service.MsmqService.*(..))")
+    @Pointcut("execution(* com.enterprise.msmq.service.contracts.IMsmqService.*(..))")
     public void msmqServiceMethods() {}
 
     /**

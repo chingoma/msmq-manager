@@ -1,11 +1,11 @@
 package com.enterprise.msmq.service;
 
-import com.enterprise.msmq.dto.ApiResponse;
 import com.enterprise.msmq.dto.MsmqMessage;
-import com.enterprise.msmq.dto.MsmqQueue;
 import com.enterprise.msmq.entity.MsmqMessageTemplate;
-import com.enterprise.msmq.exception.MsmqException;
+import com.enterprise.msmq.factory.MsmqConnectionFactory;
 import com.enterprise.msmq.repository.MsmqMessageTemplateRepository;
+import com.enterprise.msmq.service.contracts.IMsmqConnectionManager;
+import com.enterprise.msmq.service.contracts.IMsmqService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,9 +30,10 @@ import java.util.Optional;
 @Slf4j
 public class MsmqIntegrationTestService {
 
-    private final MsmqService msmqService;
+    private final IMsmqService msmqService;
     private final MsmqMessageTemplateService templateService;
     private final MsmqMessageTemplateRepository templateRepository;
+    private final MsmqConnectionFactory connectionFactory;
 
     @Value("${msmq.integration.tests.enabled:true}")
     private boolean integrationTestsEnabled;
@@ -64,19 +65,63 @@ public class MsmqIntegrationTestService {
         }
         
         try {
-            // Test 1: Create SWIFT template
+            // Test 1: Test connection infrastructure
+            testConnectionInfrastructure();
+            
+            // Test 2: Create SWIFT template
             testTemplateCreation();
             
-            // Test 2: Send message using template
+            // Test 3: Send message using template
             testTemplateMessageSending();
             
-            // Test 3: Send direct message
+            // Test 4: Send direct message
             testDirectMessageSending();
             
             log.info("✅ All MSMQ Integration Tests completed successfully!");
             
         } catch (Exception e) {
             log.error("❌ Integration tests failed: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Test 1: Test the MSMQ connection infrastructure using MsmqConnectionFactory.
+     */
+    private void testConnectionInfrastructure() {
+        log.info("📋 Test 1: Testing MSMQ connection infrastructure...");
+        
+        try {
+            // Get the connection manager from the factory
+            IMsmqConnectionManager connectionManager = connectionFactory.createConnectionManager();
+            if (connectionManager == null) {
+                log.error("❌ Failed to get connection manager from factory");
+                return;
+            }
+            
+            log.info("✅ Connection manager retrieved successfully: {}", connectionManager.getClass().getSimpleName());
+            
+            // Test connection status
+            var connectionStatus = connectionManager.getConnectionStatus();
+            log.info("✅ Connection status retrieved: {}", connectionStatus.getStatus());
+            
+            // Test connection establishment
+            try {
+                connectionManager.connect();
+                log.info("✅ Connection established successfully");
+                
+                // Test if connected
+                if (connectionManager.isConnected()) {
+                    log.info("✅ Connection verified as active");
+                } else {
+                    log.warn("⚠️ Connection established but not marked as active");
+                }
+                
+            } catch (Exception e) {
+                log.warn("⚠️ Connection establishment failed (this may be expected): {}", e.getMessage());
+            }
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to test connection infrastructure: {}", e.getMessage());
         }
     }
 

@@ -12,7 +12,7 @@ import com.enterprise.msmq.enums.ResponseCode;
 
 /**
  * MSMQ Message Parser utility class.
- * 
+ * <p>
  * This class handles parsing, validation, and transformation of
  * MSMQ messages between API and MSMQ formats.
  * 
