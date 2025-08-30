@@ -2,7 +2,8 @@ package com.enterprise.msmq.service;
 
 import com.enterprise.msmq.entity.MsmqMessageTemplate;
 import com.enterprise.msmq.repository.MsmqMessageTemplateRepository;
-import com.enterprise.msmq.util.MsmqQueueManager;
+import com.enterprise.msmq.factory.MsmqQueueManagerFactory;
+import com.enterprise.msmq.service.contracts.IMsmqQueueManager;
 import com.enterprise.msmq.dto.MsmqMessage;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,9 +27,8 @@ public class MsmqMessageTemplateService {
     private static final Logger logger = LoggerFactory.getLogger(MsmqMessageTemplateService.class);
     private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
 
-    private  final MsmqMessageTemplateRepository templateRepository;
-
-    private final MsmqQueueManager msmqQueueManager;
+    private final MsmqMessageTemplateRepository templateRepository;
+    private final MsmqQueueManagerFactory queueManagerFactory;
 
     /**
      * Create a new message template.
@@ -131,7 +131,8 @@ public class MsmqMessageTemplateService {
         
         // Send message to MSMQ
         try {
-            msmqQueueManager.sendMessage(queueName, message);
+            IMsmqQueueManager queueManager = queueManagerFactory.createQueueManager();
+            queueManager.sendMessage(queueName, message);
             logger.info("Successfully sent message using template: {} to queue: {}", templateName, queueName);
             return true;
         } catch (Exception e) {

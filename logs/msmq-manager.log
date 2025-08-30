@@ -3504,3 +3504,287 @@ Caused by: com.enterprise.msmq.exception.MsmqException: Real MSMQ connection fai
 2025-08-30 10:28:21 [main] DEBUG c.e.msmq.aspect.LoggingAspect - Service method MsmqService.sendMessage completed in 3922ms
 2025-08-30 10:28:21 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Direct message sent successfully
 2025-08-30 10:28:21 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ All MSMQ Integration Tests completed successfully!
+2025-08-30 11:12:11 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=5m41s916ms413µs900ns).
+2025-08-30 11:21:41 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=4m29s778ms901µs).
+2025-08-30 11:27:15 [SpringApplicationShutdownHook] INFO  c.e.msmq.service.MsmqService - Disconnecting from MSMQ service
+2025-08-30 11:27:15 [SpringApplicationShutdownHook] INFO  c.e.m.s.PowerShellMsmqConnectionService - Disconnecting from MSMQ service
+2025-08-30 11:27:15 [SpringApplicationShutdownHook] INFO  c.e.m.s.PowerShellMsmqConnectionService - Successfully disconnected from MSMQ service
+2025-08-30 11:27:15 [SpringApplicationShutdownHook] WARN  c.e.msmq.service.RedisMetricsService - Failed to store operation timing: LettuceConnectionFactory has been STOPPED. Use start() to initialize it
+2025-08-30 11:27:15 [SpringApplicationShutdownHook] INFO  c.e.msmq.service.MsmqService - Successfully disconnected from MSMQ service
+2025-08-30 11:27:15 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-30 11:27:15 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-08-30 11:27:15 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-08-30 11:27:33 [main] INFO  c.e.msmq.MsmqManagerApplication - Starting MsmqManagerApplication using Java 23.0.1 with PID 43788 (C:\Users\kelvin.chingoma\msmq-manager\target\classes started by kelvin.chingoma in C:\Users\kelvin.chingoma\msmq-manager)
+2025-08-30 11:27:33 [main] DEBUG c.e.msmq.MsmqManagerApplication - Running with Spring Boot v3.2.0, Spring v6.1.1
+2025-08-30 11:27:33 [main] INFO  c.e.msmq.MsmqManagerApplication - The following 1 profile is active: "dev"
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 150 ms. Found 3 JPA repository interfaces.
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageTemplateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqQueueConfigRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-08-30 11:27:34 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 8 ms. Found 0 Redis repository interfaces.
+2025-08-30 11:27:35 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-08-30 11:27:35 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-08-30 11:27:35 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-08-30 11:27:35 [main] INFO  o.a.c.c.C.[.[localhost].[/api/v1] - Initializing Spring embedded WebApplicationContext
+2025-08-30 11:27:35 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2674 ms
+2025-08-30 11:27:36 [main] DEBUG o.s.w.f.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
+2025-08-30 11:27:36 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-08-30 11:27:36 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@3b9c9b8b
+2025-08-30 11:27:36 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-08-30 11:27:36 [main] INFO  o.f.c.i.license.VersionPrinter - Flyway Community Edition 9.22.3 by Redgate
+2025-08-30 11:27:36 [main] INFO  o.f.c.i.license.VersionPrinter - See release notes here: https://rd.gt/416ObMi
+2025-08-30 11:27:36 [main] INFO  o.f.c.i.license.VersionPrinter - 
+2025-08-30 11:27:36 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/msmq_manager (PostgreSQL 16.4)
+2025-08-30 11:27:36 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.4 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-08-30 11:27:36 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 5 migrations (execution time 00:00.125s)
+2025-08-30 11:27:36 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 5
+2025-08-30 11:27:36 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2025-08-30 11:27:36 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-08-30 11:27:36 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-08-30 11:27:36 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-08-30 11:27:37 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-08-30 11:27:37 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-08-30 11:27:39 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-08-30 11:27:39 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-08-30 11:27:39 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-08-30 11:27:40 [main] DEBUG c.e.m.s.PowerShellMsmqConnectionService - Connection status initialized
+2025-08-30 11:27:40 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ connection manager using type: POWERSHELL
+2025-08-30 11:27:41 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-08-30 11:27:41 [main] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - 26 mappings in 'requestMappingHandlerMapping'
+2025-08-30 11:27:41 [main] DEBUG o.s.w.s.h.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2025-08-30 11:27:41 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-08-30 11:27:41 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@6a47f34c, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@3c6f363, org.springframework.security.web.context.SecurityContextHolderFilter@3f6f5e03, org.springframework.security.web.header.HeaderWriterFilter@13638ddf, org.springframework.web.filter.CorsFilter@d34c3be, org.springframework.security.web.authentication.logout.LogoutFilter@2a6e710e, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@7b7eb8c, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@43c4f7ee, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@10ea1754, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@20e06d7b, org.springframework.security.web.access.ExceptionTranslationFilter@54d2cdb1, org.springframework.security.web.access.intercept.AuthorizationFilter@d3bf018]
+2025-08-30 11:27:42 [main] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-08-30 11:27:42 [main] DEBUG o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-08-30 11:27:42 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path '/api/v1'
+2025-08-30 11:27:42 [main] INFO  c.e.msmq.MsmqManagerApplication - Started MsmqManagerApplication in 10.444 seconds (process running for 11.906)
+2025-08-30 11:27:42 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Application is ready, starting MSMQ queue synchronization...
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] INFO  o.a.c.c.C.[.[localhost].[/api/v1] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] DEBUG o.s.web.servlet.DispatcherServlet - Detected StandardServletMultipartResolver
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] DEBUG o.s.web.servlet.DispatcherServlet - Detected AcceptHeaderLocaleResolver
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] DEBUG o.s.web.servlet.DispatcherServlet - Detected FixedThemeResolver
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] DEBUG o.s.web.servlet.DispatcherServlet - Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@71ef979e
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] DEBUG o.s.web.servlet.DispatcherServlet - Detected org.springframework.web.servlet.support.SessionFlashMapManager@16023bb2
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] DEBUG o.s.web.servlet.DispatcherServlet - enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2025-08-30 11:27:43 [RMI TCP Connection(3)-192.168.1.160] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 4 ms
+2025-08-30 11:27:44 [main] INFO  c.e.msmq.util.MsmqQueueManager - Starting queue synchronization from MSMQ...
+2025-08-30 11:27:44 [main] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization at startup...
+2025-08-30 11:27:50 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 4 queues in MSMQ system
+2025-08-30 11:27:50 [main] INFO  c.e.m.service.MsmqQueueSyncService - MSMQ Queue found: nmb_to_dse - Path: private$\nmb_to_dse - Status: ACTIVE
+2025-08-30 11:27:51 [main] DEBUG c.e.m.service.MsmqQueueSyncService - Created new queue in database: nmb_to_dse
+2025-08-30 11:27:51 [main] INFO  c.e.m.service.MsmqQueueSyncService - MSMQ Queue found: test-queue-006 - Path: private$\test-queue-006 - Status: ACTIVE
+2025-08-30 11:27:51 [main] DEBUG c.e.m.service.MsmqQueueSyncService - Created new queue in database: test-queue-006
+2025-08-30 11:27:51 [main] INFO  c.e.m.service.MsmqQueueSyncService - MSMQ Queue found: crdb_to_dse - Path: private$\crdb_to_dse - Status: ACTIVE
+2025-08-30 11:27:51 [main] DEBUG c.e.m.service.MsmqQueueSyncService - Created new queue in database: crdb_to_dse
+2025-08-30 11:27:51 [main] INFO  c.e.m.service.MsmqQueueSyncService - MSMQ Queue found: crdb_to_dsex - Path: private$\crdb_to_dsex - Status: ACTIVE
+2025-08-30 11:27:51 [main] DEBUG c.e.m.service.MsmqQueueSyncService - Created new queue in database: crdb_to_dsex
+2025-08-30 11:27:51 [main] INFO  c.e.m.service.MsmqQueueSyncService - MSMQ queue synchronization completed successfully
+2025-08-30 11:27:51 [main] INFO  c.e.msmq.util.MsmqQueueManager - Successfully synchronized 4 queues from MSMQ to database
+2025-08-30 11:27:51 [main] DEBUG c.e.msmq.util.MsmqQueueManager - Queue synchronization completed - all queues now stored in database
+2025-08-30 11:27:51 [main] INFO  c.e.msmq.config.MsmqStartupConfig - MSMQ startup synchronization completed successfully
+2025-08-30 11:27:51 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 🚀 Starting MSMQ Integration Tests (delay: 5000ms)...
+2025-08-30 11:27:56 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Test 1: Testing MSMQ connection infrastructure...
+2025-08-30 11:27:56 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Connection manager retrieved successfully: PowerShellMsmqConnectionService
+2025-08-30 11:27:56 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Connection status retrieved: DISCONNECTED
+2025-08-30 11:27:56 [main] INFO  c.e.m.s.PowerShellMsmqConnectionService - Establishing connection to MSMQ service at localhost:1801
+2025-08-30 11:27:56 [main] INFO  c.e.m.s.PowerShellMsmqConnectionService - PowerShell MSMQ connection attempt 1 of 2 to MSMQ service at localhost:1801
+2025-08-30 11:27:56 [main] DEBUG c.e.m.s.PowerShellMsmqConnectionService - Testing PowerShell MSMQ connection...
+2025-08-30 11:27:57 [main] DEBUG c.e.m.s.PowerShellMsmqConnectionService - Testing PowerShell MSMQ connection by creating test queue: msmq-test-1756542477160
+2025-08-30 11:27:58 [main] WARN  c.e.m.s.PowerShellMsmqConnectionService - PowerShell MSMQ test queue creation failed, but connection may still be functional
+2025-08-30 11:27:58 [main] INFO  c.e.m.s.PowerShellMsmqConnectionService - Successfully connected to MSMQ service via PowerShell at localhost:1801
+2025-08-30 11:27:58 [main] INFO  c.e.m.s.PowerShellMsmqConnectionService - Successfully connected to MSMQ service at localhost:1801
+2025-08-30 11:27:58 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Connection established successfully
+2025-08-30 11:27:58 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Connection verified as active
+2025-08-30 11:27:58 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Test 1: Creating SWIFT template...
+2025-08-30 11:27:58 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Created message template: SWIFT_SHARE_TRANSFER_DETAILED
+2025-08-30 11:27:58 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ SWIFT template created successfully: SWIFT_SHARE_TRANSFER_DETAILED
+2025-08-30 11:27:58 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Test 2: Sending message using template...
+2025-08-30 11:27:58 [main] DEBUG c.e.msmq.util.MsmqQueueManager - Sending message to queue: test-queue-006
+2025-08-30 11:27:59 [main] INFO  c.e.m.u.PowerShellMsmqQueueManager - Successfully sent message to queue via PowerShell: test-queue-006
+2025-08-30 11:27:59 [main] DEBUG c.e.msmq.util.MsmqQueueManager - Message stored in database with ID: 81a09cac-d28b-4cd4-aacd-63401d0dda7d
+2025-08-30 11:27:59 [main] DEBUG c.e.msmq.util.MsmqQueueManager - Successfully sent message to PowerShell MSMQ queue: test-queue-006
+2025-08-30 11:27:59 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SHARE_TRANSFER_DETAILED to queue: test-queue-006
+2025-08-30 11:27:59 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Template message sent successfully
+2025-08-30 11:27:59 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Test 3: Sending direct message...
+2025-08-30 11:27:59 [main] DEBUG c.e.msmq.aspect.LoggingAspect - Executing service method: MsmqService.sendMessage
+2025-08-30 11:27:59 [main] INFO  c.e.msmq.service.MsmqService - Sending message to MSMQ queue: test-queue-006
+2025-08-30 11:27:59 [main] DEBUG c.e.msmq.service.MsmqService - Checking if MSMQ queue exists: test-queue-006
+2025-08-30 11:28:01 [main] DEBUG c.e.msmq.service.MsmqService - Queue existence check result for test-queue-006: true
+2025-08-30 11:28:01 [main] DEBUG c.e.msmq.util.MsmqMessageParser - Parsing outgoing message: null
+2025-08-30 11:28:01 [main] DEBUG c.e.msmq.util.MsmqMessageParser - Successfully parsed outgoing message: e1072186-0f41-4d26-a044-69f91cc94d01
+2025-08-30 11:28:01 [main] DEBUG c.e.msmq.util.MsmqQueueManager - Sending message to queue: test-queue-006
+2025-08-30 11:28:02 [main] INFO  c.e.m.u.PowerShellMsmqQueueManager - Successfully sent message to queue via PowerShell: test-queue-006
+2025-08-30 11:28:02 [main] DEBUG c.e.msmq.util.MsmqQueueManager - Message stored in database with ID: e1072186-0f41-4d26-a044-69f91cc94d01
+2025-08-30 11:28:02 [main] DEBUG c.e.msmq.util.MsmqQueueManager - Successfully sent message to PowerShell MSMQ queue: test-queue-006
+2025-08-30 11:28:03 [main] INFO  c.e.msmq.service.MsmqService - Successfully sent message to MSMQ queue: test-queue-006
+2025-08-30 11:28:03 [main] DEBUG c.e.msmq.aspect.LoggingAspect - Service method MsmqService.sendMessage completed in 3990ms
+2025-08-30 11:28:03 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Direct message sent successfully
+2025-08-30 11:28:03 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ All MSMQ Integration Tests completed successfully!
+2025-08-30 12:03:40 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=3m33s764ms404µs600ns).
+2025-08-30 12:06:31 [SpringApplicationShutdownHook] INFO  c.e.msmq.service.MsmqService - Disconnecting from MSMQ service
+2025-08-30 12:06:31 [SpringApplicationShutdownHook] INFO  c.e.m.s.PowerShellMsmqConnectionService - Disconnecting from MSMQ service
+2025-08-30 12:06:31 [SpringApplicationShutdownHook] INFO  c.e.m.s.PowerShellMsmqConnectionService - Successfully disconnected from MSMQ service
+2025-08-30 12:06:31 [SpringApplicationShutdownHook] WARN  c.e.msmq.service.RedisMetricsService - Failed to store operation timing: LettuceConnectionFactory has been STOPPED. Use start() to initialize it
+2025-08-30 12:06:31 [SpringApplicationShutdownHook] INFO  c.e.msmq.service.MsmqService - Successfully disconnected from MSMQ service
+2025-08-30 12:06:31 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-30 12:06:31 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-08-30 12:06:31 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-08-30 12:06:49 [main] INFO  c.e.msmq.MsmqManagerApplication - Starting MsmqManagerApplication using Java 23.0.1 with PID 31708 (C:\Users\kelvin.chingoma\msmq-manager\target\classes started by kelvin.chingoma in C:\Users\kelvin.chingoma\msmq-manager)
+2025-08-30 12:06:49 [main] DEBUG c.e.msmq.MsmqManagerApplication - Running with Spring Boot v3.2.0, Spring v6.1.1
+2025-08-30 12:06:49 [main] INFO  c.e.msmq.MsmqManagerApplication - The following 1 profile is active: "dev"
+2025-08-30 12:06:50 [main] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanDefinitionStoreException: Failed to parse configuration class [com.enterprise.msmq.MsmqManagerApplication]
+2025-08-30 12:06:50 [main] ERROR o.s.boot.SpringApplication - Application run failed
+org.springframework.beans.factory.BeanDefinitionStoreException: Failed to parse configuration class [com.enterprise.msmq.MsmqManagerApplication]
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:178)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.processConfigBeanDefinitions(ConfigurationClassPostProcessor.java:416)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry(ConfigurationClassPostProcessor.java:289)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanDefinitionRegistryPostProcessors(PostProcessorRegistrationDelegate.java:349)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:118)
+	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:775)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:597)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:455)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:323)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1342)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1331)
+	at com.enterprise.msmq.MsmqManagerApplication.main(MsmqManagerApplication.java:40)
+Caused by: org.springframework.context.annotation.ConflictingBeanDefinitionException: Annotation-specified bean name 'powerShellMsmqQueueManager' for bean class [com.enterprise.msmq.util.PowerShellMsmqQueueManager] conflicts with existing, non-compatible bean definition of same name and class [com.enterprise.msmq.service.PowerShellMsmqQueueManager]
+	at org.springframework.context.annotation.ClassPathBeanDefinitionScanner.checkCandidate(ClassPathBeanDefinitionScanner.java:361)
+	at org.springframework.context.annotation.ClassPathBeanDefinitionScanner.doScan(ClassPathBeanDefinitionScanner.java:288)
+	at org.springframework.context.annotation.ComponentScanAnnotationParser.parse(ComponentScanAnnotationParser.java:128)
+	at org.springframework.context.annotation.ConfigurationClassParser.doProcessConfigurationClass(ConfigurationClassParser.java:296)
+	at org.springframework.context.annotation.ConfigurationClassParser.processConfigurationClass(ConfigurationClassParser.java:245)
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:196)
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:164)
+	... 13 common frames omitted
+2025-08-30 12:30:20 [main] INFO  c.e.msmq.MsmqManagerApplication - Starting MsmqManagerApplication using Java 23.0.1 with PID 18420 (C:\Users\kelvin.chingoma\msmq-manager\target\classes started by kelvin.chingoma in C:\Users\kelvin.chingoma\msmq-manager)
+2025-08-30 12:30:20 [main] DEBUG c.e.msmq.MsmqManagerApplication - Running with Spring Boot v3.2.0, Spring v6.1.1
+2025-08-30 12:30:20 [main] INFO  c.e.msmq.MsmqManagerApplication - The following 1 profile is active: "dev"
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 270 ms. Found 3 JPA repository interfaces.
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageTemplateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqQueueConfigRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-08-30 12:30:23 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 11 ms. Found 0 Redis repository interfaces.
+2025-08-30 12:30:24 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-08-30 12:30:24 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-08-30 12:30:24 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-08-30 12:30:24 [main] INFO  o.a.c.c.C.[.[localhost].[/api/v1] - Initializing Spring embedded WebApplicationContext
+2025-08-30 12:30:24 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3894 ms
+2025-08-30 12:30:25 [main] DEBUG o.s.w.f.ServerHttpObservationFilter - Filter 'webMvcObservationFilter' configured for use
+2025-08-30 12:30:25 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-08-30 12:30:25 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@66b31d46
+2025-08-30 12:30:25 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-08-30 12:30:25 [main] INFO  o.f.c.i.license.VersionPrinter - Flyway Community Edition 9.22.3 by Redgate
+2025-08-30 12:30:25 [main] INFO  o.f.c.i.license.VersionPrinter - See release notes here: https://rd.gt/416ObMi
+2025-08-30 12:30:25 [main] INFO  o.f.c.i.license.VersionPrinter - 
+2025-08-30 12:30:25 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/msmq_manager (PostgreSQL 16.4)
+2025-08-30 12:30:25 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.4 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-08-30 12:30:25 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "public"."flyway_schema_history" does not exist yet
+2025-08-30 12:30:25 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 4 migrations (execution time 00:00.080s)
+2025-08-30 12:30:25 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "public"."flyway_schema_history" ...
+2025-08-30 12:30:26 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": << Empty Schema >>
+2025-08-30 12:30:26 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "public" to version "1 - Create initial schema"
+2025-08-30 12:30:26 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "public" to version "2 - Add additional indexes and constraints"
+2025-08-30 12:30:27 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "public" to version "3 - Create Message Templates"
+2025-08-30 12:30:27 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "public" to version "4 - Create Messages Table"
+2025-08-30 12:30:27 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 4 migrations to schema "public", now at version v4 (execution time 00:01.037s)
+2025-08-30 12:30:27 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-08-30 12:30:27 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-08-30 12:30:27 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-08-30 12:30:28 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-08-30 12:30:28 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-08-30 12:30:29 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-08-30 12:30:29 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Warning Code: 0, SQLState: 00000
+2025-08-30 12:30:29 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - constraint "fk3l5i7jbyosj6epifkee2bn7ti" of relation "msmq_messages" does not exist, skipping
+2025-08-30 12:30:29 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Warning Code: 0, SQLState: 00000
+2025-08-30 12:30:29 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - drop cascades to view v_queue_statistics
+2025-08-30 12:30:29 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-08-30 12:30:29 [main] DEBUG c.e.m.s.PowerShellMsmqConnectionService - Connection status initialized
+2025-08-30 12:30:30 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ connection manager using type: POWERSHELL
+2025-08-30 12:30:30 [main] DEBUG c.e.m.f.MsmqQueueManagerFactory - Creating queue manager for connection type: POWERSHELL
+2025-08-30 12:30:30 [main] DEBUG c.e.m.f.MsmqQueueManagerFactory - Using PowerShell-based queue manager
+2025-08-30 12:30:30 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ queue manager using type: POWERSHELL
+2025-08-30 12:30:30 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-08-30 12:30:31 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-08-30 12:30:32 [main] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - 26 mappings in 'requestMappingHandlerMapping'
+2025-08-30 12:30:32 [main] DEBUG o.s.w.s.h.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2025-08-30 12:30:32 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-08-30 12:30:32 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@1bd95764, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@36bef8fb, org.springframework.security.web.context.SecurityContextHolderFilter@83d47a2, org.springframework.security.web.header.HeaderWriterFilter@3a5beb51, org.springframework.web.filter.CorsFilter@6c8e0773, org.springframework.security.web.authentication.logout.LogoutFilter@16795459, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@4fc3bdb4, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@5eead9c2, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@2ce028fa, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@5b5db3a, org.springframework.security.web.access.ExceptionTranslationFilter@3e8d8bee, org.springframework.security.web.access.intercept.AuthorizationFilter@4c53ea14]
+2025-08-30 12:30:32 [main] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-08-30 12:30:32 [main] DEBUG o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-08-30 12:30:33 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path '/api/v1'
+2025-08-30 12:30:33 [main] INFO  c.e.msmq.MsmqManagerApplication - Started MsmqManagerApplication in 13.965 seconds (process running for 16.649)
+2025-08-30 12:30:33 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Application is ready, starting MSMQ queue synchronization...
+2025-08-30 12:30:35 [main] DEBUG c.e.m.f.MsmqQueueManagerFactory - Creating queue manager for connection type: POWERSHELL
+2025-08-30 12:30:35 [main] DEBUG c.e.m.f.MsmqQueueManagerFactory - Using PowerShell-based queue manager
+2025-08-30 12:30:35 [main] INFO  c.e.msmq.config.MsmqStartupConfig - MSMQ queue manager initialized successfully using: POWERSHELL
+2025-08-30 12:30:35 [main] INFO  c.e.msmq.config.MsmqStartupConfig - MSMQ startup synchronization completed successfully
+2025-08-30 12:30:35 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 🚀 Starting MSMQ Integration Tests (delay: 5000ms)...
+2025-08-30 12:30:40 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Test 1: Testing MSMQ connection infrastructure...
+2025-08-30 12:30:40 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Connection manager retrieved successfully: PowerShellMsmqConnectionService
+2025-08-30 12:30:40 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Connection status retrieved: DISCONNECTED
+2025-08-30 12:30:40 [main] INFO  c.e.m.s.PowerShellMsmqConnectionService - Establishing connection to MSMQ service at localhost:1801
+2025-08-30 12:30:40 [main] INFO  c.e.m.s.PowerShellMsmqConnectionService - PowerShell MSMQ connection attempt 1 of 2 to MSMQ service at localhost:1801
+2025-08-30 12:30:40 [main] DEBUG c.e.m.s.PowerShellMsmqConnectionService - Testing PowerShell MSMQ connection...
+2025-08-30 12:30:44 [main] DEBUG c.e.m.s.PowerShellMsmqConnectionService - Testing PowerShell MSMQ connection by creating test queue: msmq-test-1756546244941
+2025-08-30 12:30:46 [main] WARN  c.e.m.s.PowerShellMsmqConnectionService - PowerShell MSMQ test queue creation failed, but connection may still be functional
+2025-08-30 12:30:46 [main] INFO  c.e.m.s.PowerShellMsmqConnectionService - Successfully connected to MSMQ service via PowerShell at localhost:1801
+2025-08-30 12:30:46 [main] INFO  c.e.m.s.PowerShellMsmqConnectionService - Successfully connected to MSMQ service at localhost:1801
+2025-08-30 12:30:46 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Connection established successfully
+2025-08-30 12:30:46 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Connection verified as active
+2025-08-30 12:30:46 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Test 1: Creating SWIFT template...
+2025-08-30 12:30:46 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Created message template: SWIFT_SHARE_TRANSFER_DETAILED
+2025-08-30 12:30:46 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ SWIFT template created successfully: SWIFT_SHARE_TRANSFER_DETAILED
+2025-08-30 12:30:46 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Test 2: Sending message using template...
+2025-08-30 12:30:46 [main] DEBUG c.e.m.f.MsmqQueueManagerFactory - Creating queue manager for connection type: POWERSHELL
+2025-08-30 12:30:46 [main] DEBUG c.e.m.f.MsmqQueueManagerFactory - Using PowerShell-based queue manager
+2025-08-30 12:30:48 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to queue via PowerShell: test-queue-006
+2025-08-30 12:30:48 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SHARE_TRANSFER_DETAILED to queue: test-queue-006
+2025-08-30 12:30:48 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Template message sent successfully
+2025-08-30 12:30:48 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Test 3: Sending direct message...
+2025-08-30 12:30:48 [main] DEBUG c.e.msmq.aspect.LoggingAspect - Executing service method: MsmqService.sendMessage
+2025-08-30 12:30:48 [main] INFO  c.e.msmq.service.MsmqService - Sending message to MSMQ queue: test-queue-006
+2025-08-30 12:30:48 [main] DEBUG c.e.msmq.service.MsmqService - Checking if MSMQ queue exists: test-queue-006
+2025-08-30 12:30:52 [main] DEBUG c.e.msmq.service.MsmqService - Queue existence check result for test-queue-006: true
+2025-08-30 12:30:52 [main] DEBUG c.e.msmq.util.MsmqMessageParser - Parsing outgoing message: null
+2025-08-30 12:30:52 [main] DEBUG c.e.msmq.util.MsmqMessageParser - Successfully parsed outgoing message: d616ee27-b926-4fa6-96b0-4fd72ae91bbf
+2025-08-30 12:30:53 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to queue via PowerShell: test-queue-006
+2025-08-30 12:30:54 [main] INFO  c.e.msmq.service.MsmqService - Successfully sent message to MSMQ queue: test-queue-006
+2025-08-30 12:30:54 [main] DEBUG c.e.msmq.aspect.LoggingAspect - Service method MsmqService.sendMessage completed in 6676ms
+2025-08-30 12:30:54 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ Direct message sent successfully
+2025-08-30 12:30:54 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ All MSMQ Integration Tests completed successfully!
+2025-08-30 12:33:39 [http-nio-8081-exec-2] INFO  o.a.c.c.C.[.[localhost].[/api/v1] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-08-30 12:33:39 [http-nio-8081-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-08-30 12:33:39 [http-nio-8081-exec-2] DEBUG o.s.web.servlet.DispatcherServlet - Detected StandardServletMultipartResolver
+2025-08-30 12:33:39 [http-nio-8081-exec-2] DEBUG o.s.web.servlet.DispatcherServlet - Detected AcceptHeaderLocaleResolver
+2025-08-30 12:33:39 [http-nio-8081-exec-2] DEBUG o.s.web.servlet.DispatcherServlet - Detected FixedThemeResolver
+2025-08-30 12:33:39 [http-nio-8081-exec-2] DEBUG o.s.web.servlet.DispatcherServlet - Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@1bba5848
+2025-08-30 12:33:39 [http-nio-8081-exec-2] DEBUG o.s.web.servlet.DispatcherServlet - Detected org.springframework.web.servlet.support.SessionFlashMapManager@1f0bf0d0
+2025-08-30 12:33:39 [http-nio-8081-exec-2] DEBUG o.s.web.servlet.DispatcherServlet - enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2025-08-30 12:33:39 [http-nio-8081-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 5 ms
+2025-08-30 12:33:40 [http-nio-8081-exec-2] WARN  o.s.w.s.h.HandlerMappingIntrospector - Cache miss for REQUEST dispatch to '/api/v1/msmq/templates' (previous null). Performing MatchableHandlerMapping lookup. This is logged once only at WARN level, and every time at TRACE.
+2025-08-30 12:33:40 [http-nio-8081-exec-2] DEBUG o.s.web.servlet.DispatcherServlet - GET "/api/v1/msmq/templates", parameters={}
+2025-08-30 12:33:40 [http-nio-8081-exec-2] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - Mapped to com.enterprise.msmq.controller.MsmqMessageTemplateController#getAllTemplates()
+2025-08-30 12:33:40 [http-nio-8081-exec-2] DEBUG o.s.w.s.m.m.a.HttpEntityMethodProcessor - Using 'application/json', given [application/json] and supported [application/json, application/*+json]
+2025-08-30 12:33:40 [http-nio-8081-exec-2] DEBUG o.s.w.s.m.m.a.HttpEntityMethodProcessor - Writing [ApiResponse{statusCode='600', message='Templates retrieved successfully', timestamp=2025-08-30T12:33 (truncated)...]
+2025-08-30 12:33:40 [http-nio-8081-exec-2] DEBUG o.s.web.servlet.DispatcherServlet - Completed 200 OK
+2025-08-30 12:34:40 [http-nio-8081-exec-4] DEBUG o.s.web.servlet.DispatcherServlet - GET "/api/v1/msmq/templates/type/SWIFT", parameters={}
+2025-08-30 12:34:40 [http-nio-8081-exec-4] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - Mapped to com.enterprise.msmq.controller.MsmqMessageTemplateController#getTemplatesByType(String)
+2025-08-30 12:34:40 [http-nio-8081-exec-4] DEBUG o.s.w.s.m.m.a.HttpEntityMethodProcessor - Using 'application/json', given [application/json] and supported [application/json, application/*+json]
+2025-08-30 12:34:40 [http-nio-8081-exec-4] DEBUG o.s.w.s.m.m.a.HttpEntityMethodProcessor - Writing [ApiResponse{statusCode='600', message='Templates retrieved successfully', timestamp=2025-08-30T12:34 (truncated)...]
+2025-08-30 12:34:40 [http-nio-8081-exec-4] DEBUG o.s.web.servlet.DispatcherServlet - Completed 200 OK
+2025-08-30 12:34:58 [http-nio-8081-exec-6] DEBUG o.s.web.servlet.DispatcherServlet - GET "/api/v1/msmq/templates", parameters={}
+2025-08-30 12:34:58 [http-nio-8081-exec-6] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - Mapped to com.enterprise.msmq.controller.MsmqMessageTemplateController#getAllTemplates()
+2025-08-30 12:34:58 [http-nio-8081-exec-6] DEBUG o.s.w.s.m.m.a.HttpEntityMethodProcessor - Using 'application/json', given [application/json] and supported [application/json, application/*+json]
+2025-08-30 12:34:58 [http-nio-8081-exec-6] DEBUG o.s.w.s.m.m.a.HttpEntityMethodProcessor - Writing [ApiResponse{statusCode='600', message='Templates retrieved successfully', timestamp=2025-08-30T12:34 (truncated)...]
+2025-08-30 12:34:58 [http-nio-8081-exec-6] DEBUG o.s.web.servlet.DispatcherServlet - Completed 200 OK

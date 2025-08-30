@@ -282,7 +282,7 @@ public class PowerShellMsmqConnectionService implements IMsmqConnectionManager {
     private boolean checkPowerShellMsmqAvailability() {
         try {
             String command = "Get-Command Get-MsmqQueue -ErrorAction SilentlyContinue";
-            Process process = Runtime.getRuntime().exec("powershell.exe -Command \"" + command + "\"");
+            Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
 
             int exitCode = process.waitFor();
             return exitCode == 0;
@@ -304,7 +304,7 @@ public class PowerShellMsmqConnectionService implements IMsmqConnectionManager {
 
             // Create test queue
             String createCommand = "New-MsmqQueue -Name 'private$\\" + testQueueName + "' -QueueType Private -ErrorAction SilentlyContinue";
-            Process createProcess = Runtime.getRuntime().exec("powershell.exe -Command \"" + createCommand + "\"");
+            Process createProcess = new ProcessBuilder("powershell.exe", "-Command", createCommand).start();
 
             int createExitCode = createProcess.waitFor();
             if (createExitCode == 0) {
@@ -312,7 +312,7 @@ public class PowerShellMsmqConnectionService implements IMsmqConnectionManager {
 
                 // Clean up - delete the test queue
                 String deleteCommand = "$queue = Get-MsmqQueue -QueueType Private | Where-Object { $_.QueueName -like '*" + testQueueName + "*' } | Select-Object -First 1; if ($queue) { Remove-MsmqQueue -InputObject $queue -ErrorAction SilentlyContinue }";
-                Process deleteProcess = Runtime.getRuntime().exec("powershell.exe -Command \"" + deleteCommand + "\"");
+                Process deleteProcess = new ProcessBuilder("powershell.exe", "-Command", deleteCommand).start();
                 deleteProcess.waitFor();
 
                 logger.debug("Successfully deleted test queue via PowerShell: {}", testQueueName);

@@ -7,7 +7,8 @@ import com.enterprise.msmq.factory.MsmqConnectionFactory;
 import com.enterprise.msmq.service.contracts.IMsmqConnectionManager;
 import com.enterprise.msmq.service.contracts.IMsmqService;
 import com.enterprise.msmq.util.MsmqMessageParser;
-import com.enterprise.msmq.util.MsmqQueueManager;
+import com.enterprise.msmq.factory.MsmqQueueManagerFactory;
+import com.enterprise.msmq.service.contracts.IMsmqQueueManager;
 import com.enterprise.msmq.validator.MsmqConfigurationValidator;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -38,12 +39,13 @@ public class MsmqService implements IMsmqService {
     private static final Logger logger = LoggerFactory.getLogger(MsmqService.class);
 
     private final MsmqConnectionFactory connectionFactory;
-    private final MsmqQueueManager queueManager;
+    private final MsmqQueueManagerFactory queueManagerFactory;
     private final MsmqMessageParser messageParser;
     private final RedisMetricsService redisMetricsService;
     private final MsmqConfigurationValidator configurationValidator;
 
     private IMsmqConnectionManager connectionManager;
+    private IMsmqQueueManager queueManager;
 
     @PostConstruct
     private void init() {
@@ -53,9 +55,15 @@ public class MsmqService implements IMsmqService {
                 throw new IllegalStateException("Connection manager creation failed");
             }
             logger.info("Initialized MSMQ connection manager using type: {}", connectionFactory.getConnectionType());
+            
+            this.queueManager = queueManagerFactory.createQueueManager();
+            if (this.queueManager == null) {
+                throw new IllegalStateException("Queue manager creation failed");
+            }
+            logger.info("Initialized MSMQ queue manager using type: {}", queueManagerFactory.getConfiguredConnectionType());
         } catch (Exception e) {
-            logger.error("Failed to initialize MSMQ connection manager", e);
-            throw new IllegalStateException("Failed to initialize MSMQ connection manager", e);
+            logger.error("Failed to initialize MSMQ managers", e);
+            throw new IllegalStateException("Failed to initialize MSMQ managers", e);
         }
     }
 
@@ -138,13 +146,16 @@ public class MsmqService implements IMsmqService {
             ensureConnection();
 
             // Create queue using queue manager
-            MsmqQueue createdQueue = queueManager.createQueue(queue);
+            boolean success = queueManager.createQueue(queue);
+            if (!success) {
+                throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to create queue: " + queue.getName());
+            }
 
             // Update metrics
             updateOperationTiming(operation, System.currentTimeMillis() - startTime);
             logger.info("Successfully created MSMQ queue: {}", queue.getName());
 
-            return createdQueue;
+            return queue;
 
         } catch (MsmqException e) {
             handleOperationError(operation, e);
@@ -209,11 +220,13 @@ public class MsmqService implements IMsmqService {
             ensureConnection();
 
             // Get queue using queue manager
-            MsmqQueue queue = queueManager.getQueue(queueName);
+            Optional<MsmqQueue> queueOpt = queueManager.getQueue(queueName);
 
-            if (queue == null) {
+            if (queueOpt.isEmpty()) {
                 throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
             }
+            
+            MsmqQueue queue = queueOpt.get();
 
             // Update metrics
             updateOperationTiming(operation, System.currentTimeMillis() - startTime);
@@ -242,7 +255,7 @@ public class MsmqService implements IMsmqService {
             ensureConnection();
 
             // List queues using queue manager
-            List<MsmqQueue> queues = queueManager.listQueues();
+            List<MsmqQueue> queues = queueManager.getAllQueues();
 
             // Update metrics
             updateOperationTiming(operation, System.currentTimeMillis() - startTime);
@@ -284,13 +297,16 @@ public class MsmqService implements IMsmqService {
             ensureConnection();
 
             // Update queue using queue manager
-            MsmqQueue updatedQueue = queueManager.updateQueue(queueName, queue);
+            boolean success = queueManager.updateQueue(queueName, queue);
+            if (!success) {
+                throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to update queue: " + queueName);
+            }
 
             // Update metrics
             updateOperationTiming(operation, System.currentTimeMillis() - startTime);
             logger.info("Successfully updated MSMQ queue: {}", queueName);
 
-            return updatedQueue;
+            return queue;
 
         } catch (MsmqException e) {
             handleOperationError(operation, e);
@@ -357,7 +373,11 @@ public class MsmqService implements IMsmqService {
             ensureConnection();
 
             // Get queue statistics using queue manager
-            MsmqQueue statistics = queueManager.getQueueStatistics(queueName);
+            Optional<MsmqQueue> statisticsOpt = queueManager.getQueueStatistics(queueName);
+            if (statisticsOpt.isEmpty()) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue statistics not found: " + queueName);
+            }
+            MsmqQueue statistics = statisticsOpt.get();
 
             // Update metrics
             updateOperationTiming(operation, System.currentTimeMillis() - startTime);
@@ -405,14 +425,17 @@ public class MsmqService implements IMsmqService {
             MsmqMessage parsedMessage = messageParser.parseOutgoingMessage(message);
 
             // Send message using queue manager
-            MsmqMessage sentMessage = queueManager.sendMessage(queueName, parsedMessage);
+            boolean success = queueManager.sendMessage(queueName, parsedMessage);
+            if (!success) {
+                throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to send message to queue: " + queueName);
+            }
 
             // Update metrics
             redisMetricsService.incrementTotalMessageCount("sent");
             redisMetricsService.storeOperationTiming(operation, System.currentTimeMillis() - startTime);
             logger.info("Successfully sent message to MSMQ queue: {}", queueName);
 
-            return sentMessage;
+            return parsedMessage;
 
         } catch (MsmqException e) {
             handleOperationError(operation, e);
