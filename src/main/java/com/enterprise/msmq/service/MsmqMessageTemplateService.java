@@ -121,7 +121,7 @@ public class MsmqMessageTemplateService {
         
         // Merge template with parameters
         String mergedContent = mergeTemplateWithParameters(template.getTemplateContent(), parameters);
-        
+        logger.info("mergedContent: {}", mergedContent);
         // Create MsmqMessage object
         MsmqMessage message = new MsmqMessage();
         message.setBody(mergedContent);

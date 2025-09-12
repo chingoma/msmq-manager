@@ -42,9 +42,10 @@ public class SecuritiesSettlementTestService {
                 .buyerName("Jane Smith")
                 .tradeDate("2025-08-29")
                 .settlementDate("2025-09-03")
-                .queueName("nmb_to_dse")
+                .queueName("securities-settlement-queue")
                 .buyerBrokerBic("BUYERBICXXX")
                 .sellerBrokerBic("SELLERBICXXX")
+                    .isinCode("TZ1996100214")
                 .build();
 
             log.info("📋 Test settlement request created:");
