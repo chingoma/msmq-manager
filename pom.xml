@@ -85,6 +85,8 @@
             <artifactId>jna-platform</artifactId>
             <version>5.14.0</version>
         </dependency>
+        
+
 
         <!-- Jackson for JSON processing -->
         <dependency>
@@ -104,6 +106,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        
+        <!-- Spring Boot Starter Mail for email notifications -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         
         <!-- Redis connection pool -->

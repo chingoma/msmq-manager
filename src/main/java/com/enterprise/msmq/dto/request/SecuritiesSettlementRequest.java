@@ -1,0 +1,124 @@
+package com.enterprise.msmq.dto.request;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * Request DTO for securities settlement operations.
+ * Contains all necessary information to generate paired RECE and DELI messages.
+ * 
+ * @author Enterprise Development Team
+ * @version 1.0.0
+ * @since 2025-08-30
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Schema(description = "Request for securities settlement operation", requiredProperties = {"isinCode", "securityName", "quantity", "sellerAccountId", "buyerAccountId", "sellerName", "buyerName", "tradeDate", "settlementDate", "queueName", "commonReferenceId", "priority"})
+public class SecuritiesSettlementRequest {
+
+    @Schema(
+        description = "ISIN code of the security being transferred",
+        example = "TZ1996100214"
+    )
+    @NotBlank(message = "ISIN code is required")
+    @JsonProperty("isin_code")
+    private String isinCode;
+
+    @Schema(
+        description = "Name of the security being transferred",
+        example = "DCB"
+    )
+    @NotBlank(message = "Security name is required")
+    @JsonProperty("security_name")
+    private String securityName;
+
+    @Schema(
+        description = "Quantity of securities to transfer",
+        example = "10",
+        minimum = "1"
+    )
+    @NotNull(message = "Quantity is required")
+    @Positive(message = "Quantity must be positive")
+    @JsonProperty("quantity")
+    private Long quantity;
+
+    @Schema(
+        description = "Seller's account identifier",
+        example = "588990"
+    )
+    @NotBlank(message = "Seller account ID is required")
+    @JsonProperty("seller_account_id")
+    private String sellerAccountId;
+
+    @Schema(
+        description = "Buyer's account identifier",
+        example = "593129"
+    )
+    @NotBlank(message = "Buyer account ID is required")
+    @JsonProperty("buyer_account_id")
+    private String buyerAccountId;
+
+    @Schema(
+        description = "Seller's name",
+        example = "John Doe"
+    )
+    @NotBlank(message = "Seller name is required")
+    @JsonProperty("seller_name")
+    private String sellerName;
+
+    @Schema(
+        description = "Buyer's name",
+        example = "Jane Smith"
+    )
+    @NotBlank(message = "Buyer name is required")
+    @JsonProperty("buyer_name")
+    private String buyerName;
+
+    @Schema(
+        description = "Trade date in YYYY-MM-DD format",
+        example = "2025-08-29"
+    )
+    @NotBlank(message = "Trade date is required")
+    @JsonProperty("trade_date")
+    private String tradeDate;
+
+    @Schema(
+        description = "Settlement date in YYYY-MM-DD format",
+        example = "2025-09-03"
+    )
+    @NotBlank(message = "Settlement date is required")
+    @JsonProperty("settlement_date")
+    private String settlementDate;
+
+    @Schema(
+        description = "Destination queue name for settlement messages",
+        example = "securities-settlement-queue"
+    )
+    @NotBlank(message = "Queue name is required")
+    @JsonProperty("queue_name")
+    private String queueName;
+
+    @Schema(description = "BIC of the buyer's broker", example = "BUYERBICXXX")
+    @JsonProperty("buyer_broker_bic")
+    private String buyerBrokerBic;
+
+    @Schema(description = "BIC of the seller's broker", example = "SELLERBICXXX")
+    @JsonProperty("seller_broker_bic")
+    private String sellerBrokerBic;
+
+    public String getBuyerBrokerBic() {
+        return this.buyerBrokerBic;
+    }
+    public String getSellerBrokerBic() {
+        return this.sellerBrokerBic;
+    }
+}

@@ -62,7 +62,7 @@ try {
 # Now let's send the message using the template
 try {
     Write-Host "`nSending message using template..." -ForegroundColor Yellow
-    $sendResponse = Invoke-RestMethod -Uri "http://localhost:8081/api/v1/msmq/templates/SWIFT_SHARE_TRANSFER_DETAILED/send?queueName=test-queue-006" -Method POST -Body ($parameters | ConvertTo-Json) -ContentType "application/json" -Headers $headers
+    $sendResponse = Invoke-RestMethod -Uri "http://localhost:8081/api/v1/msmq/templates/SWIFT_SHARE_TRANSFER_DETAILED/send?queueName=testqueue" -Method POST -Body ($parameters | ConvertTo-Json) -ContentType "application/json" -Headers $headers
     
     if ($sendResponse.data) {
         Write-Host "Message sent successfully using template! ✓" -ForegroundColor Green

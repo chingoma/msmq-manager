@@ -1,0 +1,28 @@
+### Minimal Complete Paired Settlement Request Example
+
+POST http://localhost:8081/api/v1/msmq/templates/SWIFT_SHARE_TRANSFER_DETAILED/send-paired
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+Content-Type: application/json
+
+{
+  "queueName": "testqueue",
+  "baseParameters": {
+    "FROM_BIC": "588990",
+    "TO_BIC": "593129",
+    "ISIN_CODE": "GB0002634946",
+    "SECURITY_NAME": "CRDB",
+    "QUANTITY": "30",
+    "ACCOUNT_ID": "1",
+    "PARTY1_NAME": "ALI OMAR OTHMAN",
+    "PARTY1_ACCOUNT": "1",
+    "PARTY2_NAME": "CHRISTIAN KINDOLE",
+    "PARTY2_ACCOUNT": "ACC-REC-2020",
+    "TRANSACTION_DESCRIPTION": "Settlement against payment",
+    "SETTLEMENT_DATE": "2025-09-10",
+    "TRADE_TYPE": "TRAD",
+    "SETTLEMENT_CONDITION": "NOMC",
+    "TRADE_DATE": "2025-09-09",
+    "PAYMENT_TYPE": "APMT"
+  }
+}
+

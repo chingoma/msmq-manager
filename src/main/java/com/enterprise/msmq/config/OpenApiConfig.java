@@ -43,13 +43,13 @@ public class OpenApiConfig {
                     .url("https://enterprise.com/license")))
             .servers(List.of(
                 new Server()
-                    .url("http://localhost:8081/api/v1")
+                    .url("http://localhost:8081/api")
                     .description("Development Server"),
                 new Server()
-                    .url("https://staging-msmq-server:8081/api/v1")
+                    .url("https://staging-msmq-server:8081/api")
                     .description("Staging Server"),
                 new Server()
-                    .url("https://prod-msmq-server:8081/api/v1")
+                    .url("https://prod-msmq-server:8081/api")
                     .description("Production Server")
             ));
     }

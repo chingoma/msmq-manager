@@ -43,14 +43,17 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(authz -> authz
                 // Public endpoints (no authentication required)
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                .requestMatchers("/msmq/health", "/msmq/status").permitAll()
-                
+                .requestMatchers("/v1/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/v1/msmq/health", "/msmq/status").permitAll()
+                .requestMatchers("/v1/msmq/health", "/msmq/status").permitAll()
+                .requestMatchers("/v1/securities-settlement/**").permitAll()
+                .requestMatchers("/**").permitAll()
+
                 // Swagger UI and OpenAPI endpoints
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                .requestMatchers("/v1/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                 
                 // MSMQ API endpoints (require authentication)
-                .requestMatchers("/msmq/**").authenticated()
+                .requestMatchers("/v1/msmq/**").authenticated()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()

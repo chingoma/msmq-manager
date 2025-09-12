@@ -132,9 +132,15 @@ public class MsmqMessageTemplateService {
         // Send message to MSMQ
         try {
             IMsmqQueueManager queueManager = queueManagerFactory.createQueueManager();
-            queueManager.sendMessage(queueName, message);
-            logger.info("Successfully sent message using template: {} to queue: {}", templateName, queueName);
-            return true;
+            boolean messageSent = queueManager.sendMessage(queueName, message);
+            
+            if (messageSent) {
+                logger.info("Successfully sent message using template: {} to queue: {}", templateName, queueName);
+                return true;
+            } else {
+                logger.error("Failed to send message using template: {} to queue: {}", templateName, queueName);
+                return false;
+            }
         } catch (Exception e) {
             logger.error("Failed to send message using template: {} to queue: {}", templateName, queueName, e);
             return false;

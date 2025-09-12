@@ -130,7 +130,6 @@ public class PowerShellMsmqConnectionService implements IMsmqConnectionManager {
                     logger.error("PowerShell MSMQ attempt {} failed: {}", attempt, e.getMessage());
                     if (attempt == retryAttempts) {
                         logger.error("Failed to establish PowerShell MSMQ connection at {}:{}", msmqHost, msmqPort);
-                        connected = false;
                     }
                 }
             }

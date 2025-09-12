@@ -1,9 +1,11 @@
 package com.enterprise.msmq.controller;
 
 import com.enterprise.msmq.dto.ApiResponse;
+import com.enterprise.msmq.dto.request.PairedSettlementRequest;
 import com.enterprise.msmq.entity.MsmqMessageTemplate;
 import com.enterprise.msmq.service.MsmqMessageTemplateService;
 import com.enterprise.msmq.enums.ResponseCode;
+import com.enterprise.msmq.util.DateTimeUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -717,7 +721,7 @@ public class MsmqMessageTemplateController {
     public ResponseEntity<ApiResponse<Boolean>> sendMessageUsingTemplate(
             @Parameter(description = "Name of the template to use", example = "SWIFT_SHARE_TRANSFER_DETAILED")
             @PathVariable String templateName,
-            @Parameter(description = "Name of the MSMQ queue to send the message to", example = "test-queue-006")
+            @Parameter(description = "Name of the MSMQ queue to send the message to", example = "testqueue")
             @RequestParam String queueName,
             @Parameter(
                 description = "Parameters to substitute in the template",
@@ -730,7 +734,7 @@ public class MsmqMessageTemplateController {
                               "FROM_BIC": "588990",
                               "TO_BIC": "593129",
                               "MESSAGE_TYPE": "ShareTransferInstruction",
-                              "MSG_DEF_ID": "sese.023.001.06.xsd",
+                              "MSG_DEF_ID": "sese.023.001.11.xsd",
                               "CREATION_DATE": "2025-08-14T22:22:38.601927660Z",
                               "TRANSACTION_ID": "TX20250808-0002",
                               "SETTLEMENT_DATE": "2025-08-15",
@@ -755,7 +759,39 @@ public class MsmqMessageTemplateController {
             )
             @RequestBody Map<String, String> parameters) {
         try {
-            boolean success = templateService.sendMessageUsingTemplate(templateName, queueName, parameters, 1, null);
+
+            String creationDate = DateTimeUtil.dateTime();
+
+            Map<String, String> msgParameter = new HashMap<>();
+            msgParameter.put("FROM_BIC", "588990");
+            msgParameter.put("TO_BIC", "593129");
+            msgParameter.put("MESSAGE_TYPE", "ShareTransferInstruction");
+            msgParameter.put("MSG_DEF_ID", "sese.023.001.06.xsd");
+            msgParameter.put("CREATION_DATE", creationDate);
+            msgParameter.put("TRANSACTION_ID", "TX20250808-0002");
+            msgParameter.put("SETTLEMENT_DATE", "2025-08-15");
+            msgParameter.put("TRADE_TYPE", "TRAD");
+            msgParameter.put("SETTLEMENT_CONDITION", "NOMC");
+            msgParameter.put("TRADE_DATE", "2025-08-15");
+            msgParameter.put("MOVEMENT_TYPE", "DELIV");
+            msgParameter.put("PAYMENT_TYPE", "APMT");
+            msgParameter.put("ISIN_CODE", "GB0002634946");
+            msgParameter.put("SECURITY_NAME", "CRDB");
+            msgParameter.put("QUANTITY", "30");
+            msgParameter.put("ACCOUNT_ID", "1");
+            msgParameter.put("PARTY1_NAME", "ALI OMAR OTHMAN");
+            msgParameter.put("PARTY1_ACCOUNT", "1");
+            msgParameter.put("PARTY2_NAME", "CHRISTIAN KINDOLE");
+            msgParameter.put("PARTY2_ACCOUNT", "ACC-REC-2020");
+            msgParameter.put("TRANSACTION_DESCRIPTION", "Settlement against payment");
+
+            boolean success = templateService.sendMessageUsingTemplate(
+                    templateName,
+                    queueName,
+                    msgParameter,
+                    1,
+                    null
+            );
             
             ApiResponse<Boolean> response = ApiResponse.success(success ? "Message sent successfully using template" : "Failed to send message using template", success);
             response.setRequestId(generateRequestId());
@@ -768,6 +804,80 @@ public class MsmqMessageTemplateController {
             ApiResponse<Boolean> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Failed to send message using template: " + e.getMessage());
             response.setRequestId(generateRequestId());
             
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    /**
+     * Send paired (RECE/DELI) settlement messages using a template.
+     */
+    @Operation(
+        summary = "Send Paired (RECE/DELI) Settlement Messages Using Template",
+        description = "Sends both legs (RECE and DELI) of a securities settlement using the specified template, with correct cross-referencing.",
+        tags = {"MSMQ Message Templates"}
+    )
+    @PostMapping("/{templateName}/send-paired")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> sendPairedSettlement(
+            @PathVariable String templateName,
+            @RequestBody PairedSettlementRequest request
+    ) {
+        try {
+            // Use only baseParameters for both legs (no overrides)
+            Map<String, String> base = request.getBaseParameters();
+            Map<String, String> rece = base == null ? new java.util.HashMap<>() : new java.util.HashMap<>(base);
+            Map<String, String> deli = base == null ? new java.util.HashMap<>() : new java.util.HashMap<>(base);
+
+            // Generate a common reference ID for cross-linking
+            String commonRef = rece.getOrDefault("COMMON_REFERENCE_ID", java.util.UUID.randomUUID().toString());
+            rece.put("COMMON_REFERENCE_ID", commonRef);
+            deli.put("COMMON_REFERENCE_ID", commonRef);
+
+            // Generate unique transaction IDs for each leg if not provided
+            String receTxId = rece.getOrDefault("TRANSACTION_ID", "RECE-" + java.util.UUID.randomUUID());
+            String deliTxId = deli.getOrDefault("TRANSACTION_ID", "DELI-" + java.util.UUID.randomUUID());
+            rece.put("TRANSACTION_ID", receTxId);
+            deli.put("TRANSACTION_ID", deliTxId);
+
+            // Set cross-referencing fields
+            rece.put("LINKED_TRANSACTION_ID", deliTxId);
+            deli.put("LINKED_TRANSACTION_ID", receTxId);
+
+            // Set MOVEMENT_TYPE for each leg
+            rece.put("MOVEMENT_TYPE", "RECE");
+            deli.put("MOVEMENT_TYPE", "DELI");
+
+            // Overwrite constant and generated fields for both legs
+            String nowIso = java.time.Instant.now().toString();
+            rece.put("MESSAGE_TYPE", "ShareTransferInstruction");
+            deli.put("MESSAGE_TYPE", "ShareTransferInstruction");
+            rece.put("MSG_DEF_ID", "sese.023.001.11.xsd");
+            deli.put("MSG_DEF_ID", "sese.023.001.11.xsd");
+            rece.put("CREATION_DATE", nowIso);
+            deli.put("CREATION_DATE", nowIso);
+
+
+            // Use provided or default priority/correlationId
+            int priority = request.getPriority() != null ? request.getPriority() : 1;
+            String correlationId = request.getCorrelationId();
+
+            // Send both legs
+            boolean receResult = templateService.sendMessageUsingTemplate(templateName, request.getQueueName(), rece, priority, correlationId);
+            boolean deliResult = templateService.sendMessageUsingTemplate(templateName, request.getQueueName(), deli, priority, correlationId);
+
+            Map<String, Boolean> result = new java.util.HashMap<>();
+            result.put("RECE", receResult);
+            result.put("DELI", deliResult);
+
+            ApiResponse<Map<String, Boolean>> response = ApiResponse.success(
+                (receResult && deliResult) ? "Both legs sent successfully" : "One or both legs failed to send",
+                result
+            );
+            response.setRequestId(generateRequestId());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error sending paired settlement messages: {}", e.getMessage(), e);
+            ApiResponse<Map<String, Boolean>> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Failed to send paired settlement messages: " + e.getMessage());
+            response.setRequestId(generateRequestId());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }

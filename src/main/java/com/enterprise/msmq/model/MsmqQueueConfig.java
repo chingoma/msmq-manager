@@ -1,5 +1,7 @@
 package com.enterprise.msmq.model;
 
+import com.enterprise.msmq.enums.QueueDirection;
+import com.enterprise.msmq.enums.QueuePurpose;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -71,6 +73,17 @@ public class MsmqQueueConfig {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
+    
+    @Column(name = "last_sync_time")
+    private LocalDateTime lastSyncTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "queue_direction")
+    private QueueDirection queueDirection = QueueDirection.BIDIRECTIONAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "queue_purpose")
+    private QueuePurpose queuePurpose = QueuePurpose.GENERAL;
 
     // Default constructor
     public MsmqQueueConfig() {
@@ -83,6 +96,8 @@ public class MsmqQueueConfig {
         this.queueName = queueName;
         this.queuePath = queuePath;
         this.maxMessageSize = maxMessageSize;
+        this.queueDirection = QueueDirection.BIDIRECTIONAL; // Default to bidirectional
+        this.queuePurpose = QueuePurpose.GENERAL; // Default to general purpose
     }
 
     // Getters and Setters
@@ -221,6 +236,37 @@ public class MsmqQueueConfig {
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
     }
+    
+    public LocalDateTime getLastSyncTime() {
+        return lastSyncTime;
+    }
+    
+    public void setLastSyncTime(LocalDateTime lastSyncTime) {
+        this.lastSyncTime = lastSyncTime;
+    }
+    
+    /**
+     * Update the last synchronization time to now.
+     */
+    public void updateLastSyncTime() {
+        this.lastSyncTime = LocalDateTime.now();
+    }
+
+    public QueueDirection getQueueDirection() {
+        return queueDirection;
+    }
+
+    public void setQueueDirection(QueueDirection queueDirection) {
+        this.queueDirection = queueDirection;
+    }
+
+    public QueuePurpose getQueuePurpose() {
+        return queuePurpose;
+    }
+
+    public void setQueuePurpose(QueuePurpose queuePurpose) {
+        this.queuePurpose = queuePurpose;
+    }
 
     /**
      * Pre-persist hook to set creation timestamp.
@@ -247,6 +293,8 @@ public class MsmqQueueConfig {
                 ", maxMessageSize=" + maxMessageSize +
                 ", isTransactional=" + isTransactional +
                 ", isActive=" + isActive +
+                ", queueDirection=" + queueDirection +
+                ", queuePurpose=" + queuePurpose +
                 '}';
     }
 

@@ -1,6 +1,8 @@
 package com.enterprise.msmq.service;
 
 import com.enterprise.msmq.dto.*;
+import com.enterprise.msmq.enums.QueueDirection;
+import com.enterprise.msmq.enums.QueuePurpose;
 import com.enterprise.msmq.enums.ResponseCode;
 import com.enterprise.msmq.exception.MsmqException;
 import com.enterprise.msmq.factory.MsmqConnectionFactory;
@@ -10,6 +12,8 @@ import com.enterprise.msmq.util.MsmqMessageParser;
 import com.enterprise.msmq.factory.MsmqQueueManagerFactory;
 import com.enterprise.msmq.service.contracts.IMsmqQueueManager;
 import com.enterprise.msmq.validator.MsmqConfigurationValidator;
+import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
+import com.enterprise.msmq.model.MsmqQueueConfig;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +47,7 @@ public class MsmqService implements IMsmqService {
     private final MsmqMessageParser messageParser;
     private final RedisMetricsService redisMetricsService;
     private final MsmqConfigurationValidator configurationValidator;
+    private final MsmqQueueConfigRepository queueConfigRepository;
 
     private IMsmqConnectionManager connectionManager;
     private IMsmqQueueManager queueManager;
@@ -418,6 +423,9 @@ public class MsmqService implements IMsmqService {
                 throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
             }
 
+            // NEW: Validate queue direction for sending messages
+            validateQueueDirectionForSending(queueName);
+
             // Ensure connection is active
             ensureConnection();
 
@@ -466,6 +474,9 @@ public class MsmqService implements IMsmqService {
             if (!queueExists(queueName)) {
                 throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
             }
+
+            // NEW: Validate queue direction for receiving messages
+            validateQueueDirectionForReceiving(queueName);
 
             // Ensure connection is active
             ensureConnection();
@@ -1044,4 +1055,169 @@ public class MsmqService implements IMsmqService {
     }
 
     // Private helper methods
+    
+    // =====================================================
+    // NEW: Queue Direction Validation Methods
+    // =====================================================
+    
+    /**
+     * Validate that a queue allows sending messages.
+     * 
+     * @param queueName the name of the queue to validate
+     * @throws MsmqException if the queue does not allow sending
+     */
+    private void validateQueueDirectionForSending(String queueName) throws MsmqException {
+        try {
+            // Get queue configuration from database
+            var queueConfigOpt = queueConfigRepository.findByQueueName(queueName);
+            
+            if (queueConfigOpt.isPresent()) {
+                var queueConfig = queueConfigOpt.get();
+                QueueDirection direction = queueConfig.getQueueDirection();
+                
+                if (!direction.allowsSending()) {
+                    String errorMsg = String.format(
+                        "Queue '%s' is configured as %s and does not allow sending messages", 
+                        queueName, direction.getDisplayName());
+                    
+                    logger.warn("Direction validation failed for sending: {}", errorMsg);
+                    throw new MsmqException(ResponseCode.BUSINESS_ERROR, errorMsg);
+                }
+                
+                logger.debug("Queue '{}' direction validation passed for sending (direction: {})", 
+                           queueName, direction.getDisplayName());
+            } else {
+                // Queue not in database yet, allow operation (will be created during sync)
+                logger.debug("Queue '{}' not found in database, allowing send operation", queueName);
+            }
+            
+        } catch (MsmqException e) {
+            // Re-throw business logic exceptions
+            throw e;
+        } catch (Exception e) {
+            // Log unexpected errors but don't fail the operation
+            logger.warn("Error during queue direction validation for sending to '{}': {}", queueName, e.getMessage());
+        }
+    }
+    
+    /**
+     * Validate that a queue allows receiving messages.
+     * 
+     * @param queueName the name of the queue to validate
+     * @throws MsmqException if the queue does not allow receiving
+     */
+    private void validateQueueDirectionForReceiving(String queueName) throws MsmqException {
+        try {
+            // Get queue configuration from database
+            var queueConfigOpt = queueConfigRepository.findByQueueName(queueName);
+            
+            if (queueConfigOpt.isPresent()) {
+                var queueConfig = queueConfigOpt.get();
+                QueueDirection direction = queueConfig.getQueueDirection();
+                
+                if (!direction.allowsReceiving()) {
+                    String errorMsg = String.format(
+                        "Queue '%s' is configured as %s and does not allow receiving messages", 
+                        queueName, direction.getDisplayName());
+                    
+                    logger.warn("Direction validation failed for receiving: {}", errorMsg);
+                    throw new MsmqException(ResponseCode.BUSINESS_ERROR, errorMsg);
+                }
+                
+                logger.debug("Queue '{}' direction validation passed for receiving (direction: {})", 
+                           queueName, direction.getDisplayName());
+            } else {
+                // Queue not in database yet, allow operation (will be created during sync)
+                logger.debug("Queue '{}' not found in database, allowing receive operation", queueName);
+            }
+            
+        } catch (MsmqException e) {
+            // Re-throw business logic exceptions
+            throw e;
+        } catch (Exception e) {
+            // Log unexpected errors but don't fail the operation
+            logger.warn("Error during queue direction validation for receiving from '{}': {}", queueName, e.getMessage());
+        }
+    }
+    
+    /**
+     * Get all queues by direction for filtering operations.
+     * 
+     * @param direction the queue direction to filter by
+     * @return list of queue names with the specified direction
+     */
+    public List<String> getQueueNamesByDirection(QueueDirection direction) {
+        try {
+            var queueConfigs = queueConfigRepository.findByQueueDirectionAndIsActiveTrue(direction);
+            return queueConfigs.stream()
+                .map(MsmqQueueConfig::getQueueName)
+                .toList();
+        } catch (Exception e) {
+            logger.error("Error getting queue names by direction: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * Get all queues by purpose for filtering operations.
+     * 
+     * @param direction the queue purpose to filter by
+     * @return list of queue names with the specified purpose
+     */
+    public List<String> getQueueNamesByPurpose(QueuePurpose purpose) {
+        try {
+            var queueConfigs = queueConfigRepository.findByQueuePurposeAndIsActiveTrue(purpose);
+            return queueConfigs.stream()
+                .map(MsmqQueueConfig::getQueueName)
+                .toList();
+        } catch (Exception e) {
+            logger.error("Error getting queue names by purpose: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * Get comprehensive queue information including direction and purpose.
+     * 
+     * @param queueName the name of the queue
+     * @return queue information with direction and purpose details
+     */
+    public Map<String, Object> getQueueInfo(String queueName) throws MsmqException {
+        try {
+            // Get MSMQ queue details
+            MsmqQueue msmqQueue = getQueue(queueName);
+            
+            // Get database configuration details
+            var queueConfigOpt = queueConfigRepository.findByQueueName(queueName);
+            
+            Map<String, Object> queueInfo = new HashMap<>();
+            queueInfo.put("name", msmqQueue.getName());
+            queueInfo.put("path", msmqQueue.getPath());
+            queueInfo.put("messageCount", msmqQueue.getMessageCount());
+            queueInfo.put("size", msmqQueue.getSize());
+            
+            if (queueConfigOpt.isPresent()) {
+                var queueConfig = queueConfigOpt.get();
+                queueInfo.put("direction", queueConfig.getQueueDirection());
+                queueInfo.put("purpose", queueConfig.getQueuePurpose());
+                queueInfo.put("isActive", queueConfig.getIsActive());
+                queueInfo.put("lastSyncTime", queueConfig.getLastSyncTime());
+                queueInfo.put("allowsSending", queueConfig.getQueueDirection().allowsSending());
+                queueInfo.put("allowsReceiving", queueConfig.getQueueDirection().allowsReceiving());
+            } else {
+                queueInfo.put("direction", "UNKNOWN");
+                queueInfo.put("purpose", "UNKNOWN");
+                queueInfo.put("isActive", false);
+                queueInfo.put("lastSyncTime", null);
+                queueInfo.put("allowsSending", true); // Default to true for unknown queues
+                queueInfo.put("allowsReceiving", true);
+            }
+            
+            return queueInfo;
+            
+        } catch (Exception e) {
+            logger.error("Error getting comprehensive queue info for '{}': {}", queueName, e.getMessage());
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to get queue information", e);
+        }
+    }
 }

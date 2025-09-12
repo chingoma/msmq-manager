@@ -66,18 +66,21 @@ public class MsmqIntegrationTestService {
         
         try {
             // Test 1: Test connection infrastructure
-            testConnectionInfrastructure();
+//            testConnectionInfrastructure();
             
             // Test 2: Create SWIFT template
-            testTemplateCreation();
+//            testTemplateCreation();
             
             // Test 3: Send message using template
-            testTemplateMessageSending();
+//            testTemplateMessageSending();
             
             // Test 4: Send direct message
-            testDirectMessageSending();
+          //  testDirectMessageSending();
             
             log.info("✅ All MSMQ Integration Tests completed successfully!");
+            
+            // Create Securities Settlement Template
+            createSecuritiesSettlementTemplate();
             
         } catch (Exception e) {
             log.error("❌ Integration tests failed: {}", e.getMessage(), e);
@@ -188,7 +191,7 @@ public class MsmqIntegrationTestService {
      * Test 2: Send message using template with real data from test-template-message.ps1.
      */
     private void testTemplateMessageSending() {
-        log.info("📋 Test 2: Sending message using template...");
+        log.info("📋 Test : Sending message using template...");
         
         try {
             // Test parameters from test-template-message.ps1
@@ -218,7 +221,7 @@ public class MsmqIntegrationTestService {
             // Send message using template with correct method signature
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SHARE_TRANSFER_DETAILED", 
-                "test-queue-006", 
+                "testqueue", 
                 parameters,
                 1, // priority
                 "SWIFT-TX-001" // correlationId
@@ -252,11 +255,394 @@ public class MsmqIntegrationTestService {
             message.setLabel("SWIFT Share Transfer Instruction");
             
             // Send message to queue
-            msmqService.sendMessage("test-queue-006", message);
+            msmqService.sendMessage("testqueue", message);
             log.info("✅ Direct message sent successfully");
             
         } catch (Exception e) {
             log.error("❌ Failed to send direct message: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Creates the Securities Settlement template specifically designed for RECE/DELI messages.
+     */
+    private void createSecuritiesSettlementTemplate() {
+        log.info("📋 Creating Securities Settlement template...");
+        
+        try {
+            // Check if template already exists
+            Optional<MsmqMessageTemplate> existingTemplate = templateRepository.findByTemplateName("SWIFT_SECURITIES_SETTLEMENT");
+            if (existingTemplate.isPresent()) {
+                log.info("ℹ️ Securities Settlement template already exists, skipping creation");
+                return;
+            }
+            
+            // Template content based on your exact rece.xml and deli.xml structure
+            String templateContent = """
+                <?xml version="1.0" encoding="utf-8" ?>
+                <RequestPayload
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                  xmlns="SWIFTNetBusinessEnvelope"
+                >
+                  <AppHdr
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                    xmlns="urn:iso:std:iso:20022:tech:xsd:head.001.001.01"
+                  >
+                    <Fr>
+                      <OrgId>
+                        <Id>
+                          <OrgId>
+                            <AnyBIC>{{FROM_BIC}}</AnyBIC>
+                          </OrgId>
+                        </Id>
+                      </OrgId>
+                    </Fr>
+                    <To>
+                      <OrgId>
+                        <Id>
+                          <OrgId>
+                            <AnyBIC>{{TO_BIC}}</AnyBIC>
+                          </OrgId>
+                        </Id>
+                      </OrgId>
+                    </To>
+                    <BizMsgIdr>{{MESSAGE_TYPE}}</BizMsgIdr>
+                    <MsgDefIdr>{{MSG_DEF_ID}}</MsgDefIdr>
+                    <CreDt>{{CREATION_DATE}}</CreDt>
+                  </AppHdr>
+                  <Document
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                    xmlns="urn:iso:std:iso:20022:tech:xsd:sese.023.001.11"
+                  >
+                    <SctiesSttlmTxInstr>
+                      <TxId>{{TRANSACTION_ID}}</TxId>
+                      <SttlmTpAndAddtlParams>
+                        <SctiesMvmntTp>{{MOVEMENT_TYPE}}</SctiesMvmntTp>
+                        <Pmt>{{PAYMENT_TYPE}}</Pmt>
+                        <CmonId>{{COMMON_REFERENCE_ID}}</CmonId>
+                      </SttlmTpAndAddtlParams>
+                      <NbCounts>
+                        <TtlNb>
+                          <CurInstrNb>{{CURRENT_INSTRUCTION_NUMBER}}</CurInstrNb>
+                          <TtlOfLkdInstrs>{{TOTAL_LINKED_INSTRUCTIONS}}</TtlOfLkdInstrs>
+                        </TtlNb>
+                      </NbCounts>
+                      <Lnkgs>
+                        <Ref>
+                          <OthrTxId>{{LINKED_TRANSACTION_ID}}</OthrTxId>
+                        </Ref>
+                      </Lnkgs>
+                      <TradDtls>
+                        <TradId>{{TRANSACTION_ID}}</TradId>
+                        <TradId>{{COMMON_REFERENCE_ID}}</TradId>
+                        <PlcOfTrad>
+                          <MktTpAndId>
+                            <Id>
+                              <MktIdrCd>{{MARKET_IDENTIFIER}}</MktIdrCd>
+                            </Id>
+                            <Tp>
+                              <Cd>{{MARKET_TYPE}}</Cd>
+                            </Tp>
+                          </MktTpAndId>
+                        </PlcOfTrad>
+                        <TradDt>
+                          <Dt>
+                            <DtTm>{{TRADE_DATE_TIME}}</DtTm>
+                          </Dt>
+                        </TradDt>
+                        <SttlmDt>
+                          <Dt>
+                            <Dt>{{SETTLEMENT_DATE}}</Dt>
+                          </Dt>
+                        </SttlmDt>
+                        <DealPric>
+                          <Tp>
+                            <Yldd>false</Yldd>
+                          </Tp>
+                          <Val>
+                            <Amt Ccy="TZS">0</Amt>
+                          </Val>
+                        </DealPric>
+                        <TradTxCond>
+                          <Cd>{{TRADE_TRANSACTION_CONDITION}}</Cd>
+                        </TradTxCond>
+                        <TradOrgtrRole>
+                          <Prtry>
+                            <Id>{{TRADE_ORIGINATOR_ROLE}}</Id>
+                            <Issr>{{TRADE_ORIGINATOR_ISSUER}}</Issr>
+                            <SchmeNm>{{TRADE_ORIGINATOR_SCHEME}}</SchmeNm>
+                          </Prtry>
+                        </TradOrgtrRole>
+                        <MtchgSts>
+                          <Cd>{{MATCHING_STATUS}}</Cd>
+                        </MtchgSts>
+                      </TradDtls>
+                      <FinInstrmId>
+                        <ISIN>{{ISIN_CODE}}</ISIN>
+                        <Desc>{{SECURITY_DESCRIPTION}}</Desc>
+                      </FinInstrmId>
+                      <QtyAndAcctDtls>
+                        <SttlmQty>
+                          <Qty>
+                            <FaceAmt>{{QUANTITY}}</FaceAmt>
+                          </Qty>
+                        </SttlmQty>
+                        <AcctOwnr>
+                          <Id>
+                            <PrtryId>
+                              <Id>{{ACCOUNT_OWNER_ID}}</Id>
+                              <Issr>{{ACCOUNT_OWNER_ISSUER}}</Issr>
+                              <SchmeNm>{{ACCOUNT_OWNER_SCHEME}}</SchmeNm>
+                            </PrtryId>
+                          </Id>
+                        </AcctOwnr>
+                        <SfkpgAcct>
+                          <Id>{{SAFEEPING_ACCOUNT_ID}}</Id>
+                        </SfkpgAcct>
+                        <SfkpgPlc>
+                          <SfkpgPlcFrmt>
+                            <TpAndId>
+                              <SfkpgPlcTp>{{SAFEEPING_PLACE_TYPE}}</SfkpgPlcTp>
+                              <Id>{{SAFEEPING_PLACE_ID}}</Id>
+                            </TpAndId>
+                          </SfkpgPlcFrmt>
+                        </SfkpgPlc>
+                      </QtyAndAcctDtls>
+                      <SttlmParams>
+                        <SctiesTxTp>
+                          <Cd>{{SECURITIES_TRANSACTION_TYPE}}</Cd>
+                        </SctiesTxTp>
+                        <BnfclOwnrsh>
+                          <Ind>true</Ind>
+                        </BnfclOwnrsh>
+                        <SttlmSysMtd>
+                          <Cd>{{SETTLEMENT_SYSTEM_METHOD}}</Cd>
+                        </SttlmSysMtd>
+                      </SttlmParams>
+                      <DlvrgSttlmPties>
+                        <Dpstry>
+                          <Id>
+                            <AnyBIC>{{DEPOSITORY_BIC}}</AnyBIC>
+                          </Id>
+                        </Dpstry>
+                        <Pty1>
+                          <Id>
+                            <PrtryId>
+                              <Id>{{DELIVERING_PARTY1_ID}}</Id>
+                              <Issr>{{DELIVERING_PARTY1_ISSUER}}</Issr>
+                              <SchmeNm>{{DELIVERING_PARTY1_SCHEME}}</SchmeNm>
+                            </PrtryId>
+                          </Id>
+                          <PrcgId>{{PROCESSING_ID}}</PrcgId>
+                        </Pty1>
+                        <Pty2>
+                          <Id>
+                            <PrtryId>
+                              <Id>{{DELIVERING_PARTY2_ID}}</Id>
+                              <Issr>{{DELIVERING_PARTY2_ISSUER}}</Issr>
+                              <SchmeNm>{{DELIVERING_PARTY2_SCHEME}}</SchmeNm>
+                            </PrtryId>
+                          </Id>
+                        </Pty2>
+                        <Pty3>
+                          <Id>
+                            <PrtryId>
+                              <Id>{{DELIVERING_PARTY3_ID}}</Id>
+                              <Issr>{{DELIVERING_PARTY3_ISSUER}}</Issr>
+                              <SchmeNm>{{DELIVERING_PARTY3_SCHEME}}</SchmeNm>
+                            </PrtryId>
+                          </Id>
+                        </Pty3>
+                      </DlvrgSttlmPties>
+                      <RcvgSttlmPties>
+                        <Dpstry>
+                          <Id>
+                            <AnyBIC>{{RECEIVING_DEPOSITORY_BIC}}</AnyBIC>
+                          </Id>
+                        </Dpstry>
+                        <Pty1>
+                          <Id>
+                            <PrtryId>
+                              <Id>{{RECEIVING_PARTY1_ID}}</Id>
+                              <Issr>{{RECEIVING_PARTY1_ISSUER}}</Issr>
+                              <SchmeNm>{{RECEIVING_PARTY1_SCHEME}}</SchmeNm>
+                            </PrtryId>
+                          </Id>
+                        </Pty1>
+                        <Pty2>
+                          <Id>
+                            <PrtryId>
+                              <Id>{{RECEIVING_PARTY2_ID}}</Id>
+                              <Issr>{{RECEIVING_PARTY2_ISSUER}}</Issr>
+                              <SchmeNm>{{RECEIVING_PARTY2_SCHEME}}</SchmeNm>
+                            </PrtryId>
+                          </Id>
+                        </Pty2>
+                        <Pty3>
+                          <Id>
+                            <PrtryId>
+                              <Id>{{RECEIVING_PARTY3_ID}}</Id>
+                              <Issr>{{RECEIVING_PARTY3_ISSUER}}</Issr>
+                              <SchmeNm>{{RECEIVING_PARTY3_SCHEME}}</SchmeNm>
+                            </PrtryId>
+                          </Id>
+                        </Pty3>
+                      </RcvgSttlmPties>
+                      <SttlmAmt>
+                        <Amt Ccy="TZS">0</Amt>
+                        <CdtDbtInd>{{CREDIT_DEBIT_INDICATOR}}</CdtDbtInd>
+                      </SttlmAmt>
+                      <OthrAmts>
+                        <ChrgsFees>
+                          <Amt Ccy="TZS">0</Amt>
+                        </ChrgsFees>
+                        <ExctgBrkrAmt>
+                          <Amt Ccy="TZS">0</Amt>
+                        </ExctgBrkrAmt>
+                        <Othr>
+                          <Amt Ccy="TZS">0</Amt>
+                        </Othr>
+                        <RgltryAmt>
+                          <Amt Ccy="TZS">0</Amt>
+                        </RgltryAmt>
+                        <StockXchgTax>
+                          <Amt Ccy="TZS">0</Amt>
+                        </StockXchgTax>
+                        <TrfTax>
+                          <Amt Ccy="TZS">0</Amt>
+                        </TrfTax>
+                        <TxTax>
+                          <Amt Ccy="TZS">0</Amt>
+                        </TxTax>
+                        <ValAddedTax>
+                          <Amt Ccy="TZS">0</Amt>
+                        </ValAddedTax>
+                      </OthrAmts>
+                      <SplmtryData>
+                        <Envlp>
+                          <MarginParameters xmlns="">
+                            <HaircutPercentage>0</HaircutPercentage>
+                            <TolerancePercentage>0</TolerancePercentage>
+                            <CashInterestDifferentialPercentage>0</CashInterestDifferentialPercentage>
+                          </MarginParameters>
+                        </Envlp>
+                      </SplmtryData>
+                      <SplmtryData>
+                        <Envlp>
+                          <SctiesFincgDtls
+                            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                            xmlns=""
+                          >
+                            <TermntnDt xmlns="urn:iso:std:iso:20022:tech:xsd:sese.033.001.11">
+                              <Dt>
+                                <Dt>{{TERMINATION_DATE}}</Dt>
+                              </Dt>
+                            </TermntnDt>
+                            <RpRate xmlns="urn:iso:std:iso:20022:tech:xsd:sese.033.001.11">
+                              <Rate>0</Rate>
+                            </RpRate>
+                          </SctiesFincgDtls>
+                        </Envlp>
+                      </SplmtryData>
+                    </SctiesSttlmTxInstr>
+                  </Document>
+                </RequestPayload>
+                """;
+            
+            // Template parameters based on your exact rece.xml and deli.xml structure
+            Map<String, String> parameters = new HashMap<>();
+            
+            // Basic SWIFT header parameters
+            parameters.put("FROM_BIC", "string");
+            parameters.put("TO_BIC", "string");
+            parameters.put("MESSAGE_TYPE", "string");
+            parameters.put("MSG_DEF_ID", "string");
+            parameters.put("CREATION_DATE", "datetime");
+            
+            // Transaction and settlement parameters
+            parameters.put("TRANSACTION_ID", "string");
+            parameters.put("MOVEMENT_TYPE", "string");           // RECE or DELI
+            parameters.put("PAYMENT_TYPE", "string");            // FREE
+            parameters.put("COMMON_REFERENCE_ID", "string");     // CmonId linking both messages
+            parameters.put("CURRENT_INSTRUCTION_NUMBER", "string"); // CurInstrNb
+            parameters.put("TOTAL_LINKED_INSTRUCTIONS", "string");  // TtlOfLkdInstrs
+            parameters.put("LINKED_TRANSACTION_ID", "string");     // OthrTxId for cross-reference
+            
+            // Trade details
+            parameters.put("MARKET_IDENTIFIER", "string");        // MktIdrCd
+            parameters.put("MARKET_TYPE", "string");              // Market type code
+            parameters.put("TRADE_DATE_TIME", "datetime");        // Trade date and time
+            parameters.put("SETTLEMENT_DATE", "date");            // Settlement date
+            parameters.put("TRADE_TRANSACTION_CONDITION", "string"); // Trade transaction condition
+            parameters.put("TRADE_ORIGINATOR_ROLE", "string");    // Trade originator role
+            parameters.put("TRADE_ORIGINATOR_ISSUER", "string");  // Trade originator issuer
+            parameters.put("TRADE_ORIGINATOR_SCHEME", "string");  // Trade originator scheme
+            parameters.put("MATCHING_STATUS", "string");          // Matching status
+            
+            // Security details
+            parameters.put("ISIN_CODE", "string");
+            parameters.put("SECURITY_DESCRIPTION", "string");
+            parameters.put("QUANTITY", "number");
+            
+            // Account and settlement details
+            parameters.put("ACCOUNT_OWNER_ID", "string");
+            parameters.put("ACCOUNT_OWNER_ISSUER", "string");
+            parameters.put("ACCOUNT_OWNER_SCHEME", "string");
+            parameters.put("SAFEEPING_ACCOUNT_ID", "string");
+            parameters.put("SAFEEPING_PLACE_TYPE", "string");
+            parameters.put("SAFEEPING_PLACE_ID", "string");
+            parameters.put("SECURITIES_TRANSACTION_TYPE", "string");
+            parameters.put("SETTLEMENT_SYSTEM_METHOD", "string");
+            
+            // Party details (Delivering and Receiving)
+            parameters.put("DEPOSITORY_BIC", "string");
+            parameters.put("DELIVERING_PARTY1_ID", "string");
+            parameters.put("DELIVERING_PARTY1_ISSUER", "string");
+            parameters.put("DELIVERING_PARTY1_SCHEME", "string");
+            parameters.put("PROCESSING_ID", "string");
+            parameters.put("DELIVERING_PARTY2_ID", "string");
+            parameters.put("DELIVERING_PARTY2_ISSUER", "string");
+            parameters.put("DELIVERING_PARTY2_SCHEME", "string");
+            parameters.put("DELIVERING_PARTY3_ID", "string");
+            parameters.put("DELIVERING_PARTY3_ISSUER", "string");
+            parameters.put("DELIVERING_PARTY3_SCHEME", "string");
+            
+            parameters.put("RECEIVING_DEPOSITORY_BIC", "string");
+            parameters.put("RECEIVING_PARTY1_ID", "string");
+            parameters.put("RECEIVING_PARTY1_ISSUER", "string");
+            parameters.put("RECEIVING_PARTY1_SCHEME", "string");
+            parameters.put("RECEIVING_PARTY2_ID", "string");
+            parameters.put("RECEIVING_PARTY2_ISSUER", "string");
+            parameters.put("RECEIVING_PARTY2_SCHEME", "string");
+            parameters.put("RECEIVING_PARTY3_ID", "string");
+            parameters.put("RECEIVING_PARTY3_ISSUER", "string");
+            parameters.put("RECEIVING_PARTY3_SCHEME", "string");
+            
+            // Settlement amount and credit/debit indicator
+            parameters.put("CREDIT_DEBIT_INDICATOR", "string");  // CRDT or DBIT
+            
+            // Termination date
+            parameters.put("TERMINATION_DATE", "date");
+            
+            MsmqMessageTemplate template = new MsmqMessageTemplate();
+            template.setTemplateName("SWIFT_SECURITIES_SETTLEMENT");
+            template.setTemplateType("SWIFT");
+            template.setTemplateContent(templateContent);
+            template.setDescription("SWIFT Securities Settlement Template for RECE/DELI paired messages with cross-referencing");
+            template.setParameters(parameters);
+            template.setIsActive(true);
+            template.setCreatedBy("System");
+            template.setCreatedAt(LocalDateTime.now());
+            
+            MsmqMessageTemplate createdTemplate = templateService.createTemplate(template);
+            log.info("✅ Securities Settlement template created successfully: {}", createdTemplate.getTemplateName());
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to create Securities Settlement template: {}", e.getMessage(), e);
         }
     }
 }

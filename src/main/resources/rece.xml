@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RequestPayload
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns="SWIFTNetBusinessEnvelope"
+>
+  <AppHdr
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="urn:iso:std:iso:20022:tech:xsd:head.001.001.01"
+  >
+    <Fr>
+      <OrgId>
+        <Id>
+          <OrgId>
+            <AnyBIC>SAFMXXXXXXX</AnyBIC>
+          </OrgId>
+        </Id>
+      </OrgId>
+    </Fr>
+    <To>
+      <OrgId>
+        <Id>
+          <OrgId>
+            <AnyBIC>DSTXTZTZXXX</AnyBIC>
+          </OrgId>
+        </Id>
+      </OrgId>
+    </To>
+    <BizMsgIdr>Matched Deal Report</BizMsgIdr>
+    <MsgDefIdr>sese.023.001.11.xsd</MsgDefIdr>
+    <CreDt>2025-08-29T12:59:39.4461421Z</CreDt>
+  </AppHdr>
+  <Document
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="urn:iso:std:iso:20022:tech:xsd:sese.023.001.11"
+  >
+    <SctiesSttlmTxInstr>
+      <TxId>01C83692A</TxId>
+      <SttlmTpAndAddtlParams>
+        <SctiesMvmntTp>RECE</SctiesMvmntTp>
+        <Pmt>FREE</Pmt>
+        <CmonId>616964F32</CmonId>
+      </SttlmTpAndAddtlParams>
+      <NbCounts>
+        <TtlNb>
+          <CurInstrNb>001</CurInstrNb>
+          <TtlOfLkdInstrs>002</TtlOfLkdInstrs>
+        </TtlNb>
+      </NbCounts>
+      <Lnkgs>
+        <Ref>
+          <OthrTxId>01C83692B</OthrTxId>
+        </Ref>
+      </Lnkgs>
+      <TradDtls>
+        <TradId>01C83692A</TradId>
+        <TradId>616964F32</TradId>
+        <PlcOfTrad>
+          <MktTpAndId>
+            <Id>
+              <MktIdrCd>SAFM</MktIdrCd>
+            </Id>
+            <Tp>
+              <Cd>OTCO</Cd>
+            </Tp>
+          </MktTpAndId>
+        </PlcOfTrad>
+        <TradDt>
+          <Dt>
+            <DtTm>2025-08-29T15:59:37</DtTm>
+          </Dt>
+        </TradDt>
+        <SttlmDt>
+          <Dt>
+            <Dt>2025-09-03</Dt>
+          </Dt>
+        </SttlmDt>
+        <DealPric>
+          <Tp>
+            <Yldd>false</Yldd>
+          </Tp>
+          <Val>
+            <Amt Ccy="TZS">0</Amt>
+          </Val>
+        </DealPric>
+        <TradTxCond>
+          <Cd>MAPR</Cd>
+        </TradTxCond>
+        <TradOrgtrRole>
+          <Prtry>
+            <Id>MNOn</Id>
+            <Issr>DSTXTZTZXXX</Issr>
+            <SchmeNm>ORDER PLACEMENT PLATFORM</SchmeNm>
+          </Prtry>
+        </TradOrgtrRole>
+        <MtchgSts>
+          <Cd>MACH</Cd>
+        </MtchgSts>
+      </TradDtls>
+      <FinInstrmId>
+        <ISIN>TZ1996100214</ISIN>
+        <Desc>DCB</Desc>
+      </FinInstrmId>
+      <QtyAndAcctDtls>
+        <SttlmQty>
+          <Qty>
+            <FaceAmt>10</FaceAmt>
+          </Qty>
+        </SttlmQty>
+        <AcctOwnr>
+          <Id>
+            <PrtryId>
+              <Id>588990</Id>
+              <Issr>CSD</Issr>
+              <SchmeNm>SOR ACCOUNT</SchmeNm>
+            </PrtryId>
+          </Id>
+        </AcctOwnr>
+        <SfkpgAcct>
+          <Id>B05/C</Id>
+        </SfkpgAcct>
+        <SfkpgPlc>
+          <SfkpgPlcFrmt>
+            <TpAndId>
+              <SfkpgPlcTp>CUST</SfkpgPlcTp>
+              <Id>DSTXTZTZXXX</Id>
+            </TpAndId>
+          </SfkpgPlcFrmt>
+        </SfkpgPlc>
+      </QtyAndAcctDtls>
+      <SttlmParams>
+        <SctiesTxTp>
+          <Cd>TRAD</Cd>
+        </SctiesTxTp>
+        <BnfclOwnrsh>
+          <Ind>true</Ind>
+        </BnfclOwnrsh>
+        <SttlmSysMtd>
+          <Cd>NSET</Cd>
+        </SttlmSysMtd>
+      </SttlmParams>
+      <DlvrgSttlmPties>
+        <Dpstry>
+          <Id>
+            <AnyBIC>DSTXTZTZ</AnyBIC>
+          </Id>
+        </Dpstry>
+        <Pty1>
+          <Id>
+            <PrtryId>
+              <Id>B02/B</Id>
+              <Issr>CSD</Issr>
+              <SchmeNm>TRADING PARTY</SchmeNm>
+            </PrtryId>
+          </Id>
+          <PrcgId>01C83692A</PrcgId>
+        </Pty1>
+        <Pty2>
+          <Id>
+            <PrtryId>
+              <Id>593129</Id>
+              <Issr>CSD</Issr>
+              <SchmeNm>SOR ACCOUNT</SchmeNm>
+            </PrtryId>
+          </Id>
+        </Pty2>
+        <Pty3>
+          <Id>
+            <PrtryId>
+              <Id>B02/C</Id>
+              <Issr>CSD</Issr>
+              <SchmeNm>MB SCA</SchmeNm>
+            </PrtryId>
+          </Id>
+        </Pty3>
+      </DlvrgSttlmPties>
+      <RcvgSttlmPties>
+        <Dpstry>
+          <Id>
+            <AnyBIC>SAFMXXXX</AnyBIC>
+          </Id>
+        </Dpstry>
+        <Pty1>
+          <Id>
+            <PrtryId>
+              <Id>B05/B</Id>
+              <Issr>CSD</Issr>
+              <SchmeNm>TRADING PARTY</SchmeNm>
+            </PrtryId>
+          </Id>
+        </Pty1>
+        <Pty2>
+          <Id>
+            <PrtryId>
+              <Id>588990</Id>
+              <Issr>CSD</Issr>
+              <SchmeNm>SOR ACCOUNT</SchmeNm>
+            </PrtryId>
+          </Id>
+        </Pty2>
+        <Pty3>
+          <Id>
+            <PrtryId>
+              <Id>B05/C</Id>
+              <Issr>CSD</Issr>
+              <SchmeNm>MB SCA</SchmeNm>
+            </PrtryId>
+          </Id>
+        </Pty3>
+      </RcvgSttlmPties>
+      <SttlmAmt>
+        <Amt Ccy="TZS">0</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+      </SttlmAmt>
+      <OthrAmts>
+        <ChrgsFees>
+          <Amt Ccy="TZS">0</Amt>
+        </ChrgsFees>
+        <ExctgBrkrAmt>
+          <Amt Ccy="TZS">0</Amt>
+        </ExctgBrkrAmt>
+        <Othr>
+          <Amt Ccy="TZS">0</Amt>
+        </Othr>
+        <RgltryAmt>
+          <Amt Ccy="TZS">0</Amt>
+        </RgltryAmt>
+        <StockXchgTax>
+          <Amt Ccy="TZS">0</Amt>
+        </StockXchgTax>
+        <TrfTax>
+          <Amt Ccy="TZS">0</Amt>
+        </TrfTax>
+        <TxTax>
+          <Amt Ccy="TZS">0</Amt>
+        </TxTax>
+        <ValAddedTax>
+          <Amt Ccy="TZS">0</Amt>
+        </ValAddedTax>
+      </OthrAmts>
+      <SplmtryData>
+        <Envlp>
+          <MarginParameters xmlns="">
+            <HaircutPercentage>0</HaircutPercentage>
+            <TolerancePercentage>0</TolerancePercentage>
+            <CashInterestDifferentialPercentage
+            >0</CashInterestDifferentialPercentage>
+          </MarginParameters>
+        </Envlp>
+      </SplmtryData>
+      <SplmtryData>
+        <Envlp>
+          <SctiesFincgDtls
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns=""
+          >
+            <TermntnDt xmlns="urn:iso:std:iso:20022:tech:xsd:sese.033.001.11">
+              <Dt>
+                <Dt>2025-08-29</Dt>
+              </Dt>
+            </TermntnDt>
+            <RpRate xmlns="urn:iso:std:iso:20022:tech:xsd:sese.033.001.11">
+              <Rate>0</Rate>
+            </RpRate>
+          </SctiesFincgDtls>
+        </Envlp>
+      </SplmtryData>
+    </SctiesSttlmTxInstr>
+  </Document>
+</RequestPayload>

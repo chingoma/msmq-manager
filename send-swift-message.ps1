@@ -96,7 +96,7 @@ $body = @{
 
 # Send message to MSMQ via our API
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:8081/api/v1/msmq/queues/test-queue-006/messages" -Method POST -Body $body -ContentType "application/json" -Headers $headers
+    $response = Invoke-RestMethod -Uri "http://localhost:8081/api/v1/msmq/queues/testqueue/messages" -Method POST -Body $body -ContentType "application/json" -Headers $headers
     Write-Host "Message sent successfully!" -ForegroundColor Green
     Write-Host "Response: $($response | ConvertTo-Json -Depth 10)"
 } catch {

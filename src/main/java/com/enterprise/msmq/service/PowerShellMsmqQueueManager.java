@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -16,29 +17,35 @@ import java.util.UUID;
 
 /**
  * PowerShell-based MSMQ Queue Manager.
- * 
+ * <p>
  * This implementation uses PowerShell MSMQ cmdlets and .NET System.Messaging
  * for reliable MSMQ operations. It implements the IMsmqQueueManager interface
  * to provide consistent queue management operations.
- * 
- * @author Enterprise MSMQ Team
- * @version 1.0
+ *
+ * <p>Implements all required methods for queue CRUD and message operations.
+ * Handles process exit codes and PowerShell output for robust error handling.
+ *
+ * @author Enterprise Development Team
+ * @version 1.0.0
+ * @since 2024-01-01
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
 
+    /**
+     * Creates a new MSMQ queue using PowerShell.
+     * Handles process exit codes and logs errors.
+     */
     @Override
     public boolean createQueue(MsmqQueue queue) {
         try {
             String queuePath = queue.getPath() != null ? queue.getPath() : "private$\\" + queue.getName();
             String queueName = queuePath.replace("private$\\", "");
             String command = "New-MsmqQueue -Name '" + queuePath + "' -QueueType Private -ErrorAction SilentlyContinue";
-            
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             if (exitCode == 0) {
                 log.info("Successfully created queue via PowerShell: {}", queuePath);
                 return true;
@@ -46,22 +53,23 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 log.error("Failed to create queue via PowerShell: {}, exit code: {}", queuePath, exitCode);
                 return false;
             }
-
         } catch (Exception e) {
             log.error("Error creating queue {} via PowerShell: {}", queue.getName(), e.getMessage(), e);
             return false;
         }
     }
 
+    /**
+     * Deletes an MSMQ queue using PowerShell.
+     * Handles process exit codes and parses PowerShell output for status.
+     */
     @Override
     public boolean deleteQueue(String queuePath) {
         try {
             // For PowerShell MSMQ, we need to get the queue object first, then remove it
             String command = "$queue = Get-MsmqQueue -QueueType Private | Where-Object { $_.QueueName -like '*" + queuePath + "*' } | Select-Object -First 1; if ($queue) { Remove-MsmqQueue -InputObject $queue -ErrorAction SilentlyContinue; if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' } } else { Write-Host 'NOT_FOUND' }";
-            
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             // Read the output to check for our specific messages
             String output = "";
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
@@ -72,7 +80,6 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 }
                 output = outputBuilder.toString().trim();
             }
-            
             if (exitCode == 0) {
                 if (output.contains("SUCCESS")) {
                     log.info("Successfully deleted queue via PowerShell: {}", queuePath);
@@ -91,57 +98,63 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 log.error("Failed to delete queue via PowerShell: {}, exit code: {}", queuePath, exitCode);
                 return false;
             }
-
         } catch (Exception e) {
             log.error("Error deleting queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
             return false;
         }
     }
 
+    /**
+     * Checks if a queue exists using PowerShell.
+     * Returns true if found, false otherwise.
+     */
     @Override
     public boolean queueExists(String queuePath) {
         try {
             String command = "Get-MsmqQueue -QueueType Private | Where-Object { $_.QueueName -like '*" + queuePath + "*' } | Select-Object -First 1";
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             // Read output to see if queue exists
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (line.trim().length() > 0) {
+                    if (!line.trim().isEmpty()) {
                         return true; // Queue found
                     }
                 }
             }
-            
             return false; // No queue found
-            
         } catch (Exception e) {
             log.error("Error checking if queue exists {} via PowerShell: {}", queuePath, e.getMessage(), e);
             return false;
         }
     }
 
+    /**
+     * Sends a message to a queue using PowerShell.
+     * Handles process exit codes and logs errors.
+     */
     @Override
     public boolean sendMessage(String queuePath, MsmqMessage message) {
         return sendMessage(queuePath, message.getBody());
     }
 
+    /**
+     * Sends a raw message body to a queue using PowerShell.
+     * Handles process exit codes and logs errors and PowerShell output.
+     */
     @Override
     public boolean sendMessage(String queuePath, String messageBody) {
         try {
+            log.info("Sending message to queue via PowerShell: {}", queuePath);
             // Use ActiveXMessageFormatter to send messages as raw text without any parsing or encoding
             String queuePathWithPrefix = ".\\private$\\" + queuePath;
-            
-            // Escape the message properly for PowerShell to preserve formatting
-            String escapedMessage = messageBody
-                .replace("\\", "\\\\")
-                .replace("'", "''")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
-            
+            // Use a temporary file approach to avoid PowerShell here-string formatting issues
+            String tempFile = System.getProperty("java.io.tmpdir") + "\\msmq_message_" + System.currentTimeMillis() + ".xml";
+            // Write message to temporary file
+            try (java.io.FileWriter writer = new java.io.FileWriter(tempFile)) {
+                writer.write(messageBody);
+            }
             String command = "Add-Type -AssemblyName System.Messaging; " +
                 "$queuePath = '" + queuePathWithPrefix + "'; " +
                 "if (-not [System.Messaging.MessageQueue]::Exists($queuePath)) { " +
@@ -149,24 +162,51 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 "}; " +
                 "$queue = New-Object System.Messaging.MessageQueue $queuePath; " +
                 "$queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
-                "$queue.Send('" + escapedMessage + "', 'MSMQ Manager Message'); " +
-                "$queue.Close(); " +
-                "if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' }";
-            
+                "$xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
+                "try { " +
+                "    $queue.Send($xmlPayload, 'MSMQ Manager Message'); " +
+                "    Write-Host 'SUCCESS' " +
+                "} catch { " +
+                "    Write-Host 'FAILED - ' + $_.Exception.Message " +
+                "} finally { " +
+                "    $queue.Close(); " +
+                "    Remove-Item '" + tempFile.replace("\\", "\\\\") + "' -Force " +
+                "}";
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
-            int exitCode = process.waitFor();
-            
-            // Read the output to check for our specific messages
-            String output = "";
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                StringBuilder outputBuilder = new StringBuilder();
-                while ((line = reader.readLine()) != null) {
-                    outputBuilder.append(line).append("\n");
+            // Capture both standard output and error output
+            StringBuilder outputBuilder = new StringBuilder();
+            StringBuilder errorBuilder = new StringBuilder();
+            // Read standard output in a separate thread
+            Thread outputThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        outputBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading PowerShell output: {}", e.getMessage());
                 }
-                output = outputBuilder.toString().trim();
-            }
-            
+            });
+            // Read error output in a separate thread
+            Thread errorThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        errorBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading PowerShell error output: {}", e.getMessage());
+                }
+            });
+            // Start both threads
+            outputThread.start();
+            errorThread.start();
+            int exitCode = process.waitFor();
+            // Wait for both threads to complete
+            outputThread.join();
+            errorThread.join();
+            String output = outputBuilder.toString().trim();
+            String errorOutput = errorBuilder.toString().trim();
             if (exitCode == 0) {
                 if (output.contains("SUCCESS")) {
                     log.info("Successfully sent message to queue via PowerShell: {}", queuePath);
@@ -180,15 +220,25 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 }
             } else {
                 log.error("Failed to send message to PowerShell: {}, exit code: {}", queuePath, exitCode);
+                if (!errorOutput.isEmpty()) {
+                    log.error("PowerShell error output: {}", errorOutput);
+                }
+                if (!output.isEmpty()) {
+                    log.error("PowerShell standard output: {}", output);
+                }
                 return false;
             }
-
         } catch (Exception e) {
-            log.error("Error sending message to queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
+            log.error("Error sending message to queue {} via PowerShell script: {}", 
+                queuePath, e.getMessage(), e);
             return false;
         }
     }
 
+    /**
+     * Receives a message from a queue using PowerShell.
+     * Returns Optional.empty() if no message or error.
+     */
     @Override
     public Optional<MsmqMessage> receiveMessage(String queuePath) {
         try {
@@ -208,16 +258,13 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 "} else { " +
                 "    Write-Host 'QUEUE_NOT_FOUND' " +
                 "}";
-            
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             if (exitCode == 0) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line;
                     StringBuilder messageBody = new StringBuilder();
                     String status = "";
-                    
                     while ((line = reader.readLine()) != null) {
                         if (line.equals("SUCCESS") || line.equals("NO_MESSAGE") || line.equals("QUEUE_NOT_FOUND")) {
                             status = line;
@@ -226,13 +273,12 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                             messageBody.append(line).append("\n");
                         }
                     }
-                    
-                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
+                    if ("SUCCESS".equals(status) && !messageBody.isEmpty()) {
                         MsmqMessage message = new MsmqMessage();
                         message.setMessageId(UUID.randomUUID().toString());
                         message.setBody(messageBody.toString().trim());
                         message.setSourceQueue(queuePath);
-                        message.setCreatedTime(java.time.LocalDateTime.now());
+                        message.setCreatedTime(LocalDateTime.now());
                         return Optional.of(message);
                     } else if ("NO_MESSAGE".equals(status)) {
                         return Optional.empty();
@@ -244,14 +290,16 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
             } else {
                 log.error("Failed to receive message from queue: {}, exit code: {}", queuePath, exitCode);
             }
-            
         } catch (Exception e) {
             log.error("Error receiving message from queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
         }
-        
         return Optional.empty();
     }
 
+    /**
+     * Peeks at a message in a queue using PowerShell.
+     * Returns Optional.empty() if no message or error.
+     */
     @Override
     public Optional<MsmqMessage> peekMessage(String queuePath) {
         try {
@@ -271,16 +319,13 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 "} else { " +
                 "    Write-Host 'QUEUE_NOT_FOUND' " +
                 "}";
-            
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             if (exitCode == 0) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line;
                     StringBuilder messageBody = new StringBuilder();
                     String status = "";
-                    
                     while ((line = reader.readLine()) != null) {
                         if (line.equals("SUCCESS") || line.equals("NO_MESSAGE") || line.equals("QUEUE_NOT_FOUND")) {
                             status = line;
@@ -289,13 +334,12 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                             messageBody.append(line).append("\n");
                         }
                     }
-                    
-                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
+                    if ("SUCCESS".equals(status) && !messageBody.isEmpty()) {
                         MsmqMessage message = new MsmqMessage();
                         message.setMessageId(UUID.randomUUID().toString());
                         message.setBody(messageBody.toString().trim());
                         message.setSourceQueue(queuePath);
-                        message.setCreatedTime(java.time.LocalDateTime.now());
+                        message.setCreatedTime(LocalDateTime.now());
                         return Optional.of(message);
                     } else if ("NO_MESSAGE".equals(status)) {
                         return Optional.empty();
@@ -307,16 +351,18 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
             } else {
                 log.error("Failed to peek message from queue: {}, exit code: {}", queuePath, exitCode);
             }
-            
         } catch (Exception e) {
             log.error("Error peeking message from queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
         }
-        
         return Optional.empty();
     }
 
+    /**
+     * Purges all messages from a queue using PowerShell.
+     * Logs result and errors.
+     */
     @Override
-    public boolean purgeQueue(String queuePath) {
+    public void purgeQueue(String queuePath) {
         try {
             String command = "Add-Type -AssemblyName System.Messaging; " +
                 "$queuePath = '.\\private$\\" + queuePath + "'; " +
@@ -328,34 +374,33 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 "} else { " +
                 "    Write-Host 'QUEUE_NOT_FOUND' " +
                 "}";
-            
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             if (exitCode == 0) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         if (line.equals("SUCCESS")) {
                             log.info("Successfully purged queue via PowerShell: {}", queuePath);
-                            return true;
+                            return;
                         } else if (line.equals("QUEUE_NOT_FOUND")) {
                             log.warn("Queue not found for purging: {}", queuePath);
-                            return false;
+                            return;
                         }
                     }
                 }
             } else {
                 log.error("Failed to purge queue: {}, exit code: {}", queuePath, exitCode);
             }
-            
         } catch (Exception e) {
             log.error("Error purging queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
         }
-        
-        return false;
     }
 
+    /**
+     * Gets all available queues using PowerShell.
+     * Returns an empty list if none found or error occurs.
+     */
     @Override
     public List<MsmqQueue> getAllQueues() {
         List<MsmqQueue> queues = new ArrayList<>();
@@ -363,18 +408,17 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
             String command = "Get-MsmqQueue -QueueType Private | Select-Object QueueName, QueueType, MessageCount";
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             if (exitCode == 0) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        if (line.trim().length() > 0 && !line.contains("QueueName")) {
+                        if (!line.trim().isEmpty() && !line.contains("QueueName")) {
                             // Parse queue information (simplified parsing)
                             String[] parts = line.split("\\s+");
                             if (parts.length >= 2) {
                                 MsmqQueue queue = new MsmqQueue();
                                 queue.setName(parts[0]);
-                                queue.setPath("private$\\" + parts[0]);
+                                queue.setPath(parts[0]);
                                 queue.setType("PRIVATE");
                                 queues.add(queue);
                             }
@@ -382,14 +426,16 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                     }
                 }
             }
-            
         } catch (Exception e) {
             log.error("Error getting all queues via PowerShell: {}", e.getMessage(), e);
         }
-        
         return queues;
     }
 
+    /**
+     * Gets a specific queue by path using PowerShell.
+     * Returns Optional.empty() if not found or error occurs.
+     */
     @Override
     public Optional<MsmqQueue> getQueue(String queuePath) {
         try {
@@ -403,21 +449,23 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
         } catch (Exception e) {
             log.error("Error getting queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
         }
-        
         return Optional.empty();
     }
 
+    /**
+     * Gets the count of messages in a queue using PowerShell.
+     * Returns -1 if error or not found.
+     */
     @Override
     public long getMessageCount(String queuePath) {
         try {
             String command = "Get-MsmqQueue -QueueType Private | Where-Object { $_.QueueName -like '*" + queuePath + "*' } | Select-Object -ExpandProperty MessageCount";
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             if (exitCode == 0) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line = reader.readLine();
-                    if (line != null && line.trim().length() > 0) {
+                    if (line != null && !line.trim().isEmpty()) {
                         try {
                             return Long.parseLong(line.trim());
                         } catch (NumberFormatException e) {
@@ -426,14 +474,16 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                     }
                 }
             }
-            
         } catch (Exception e) {
             log.error("Error getting message count for queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
         }
-        
         return -1;
     }
 
+    /**
+     * Tests PowerShell MSMQ connectivity.
+     * Returns true if PowerShell MSMQ cmdlets or .NET System.Messaging are available.
+     */
     @Override
     public boolean testConnectivity() {
         try {
@@ -441,7 +491,6 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
             String command = "Get-Command Get-MsmqQueue -ErrorAction SilentlyContinue";
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            
             if (exitCode == 0) {
                 log.debug("PowerShell MSMQ connectivity test passed");
                 return true;
@@ -449,17 +498,20 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 log.warn("PowerShell MSMQ cmdlets not available, but .NET System.Messaging may still work");
                 return true; // Don't fail connectivity test for missing cmdlets
             }
-            
         } catch (Exception e) {
             log.error("PowerShell MSMQ connectivity test failed: {}", e.getMessage(), e);
             return false;
         }
     }
 
+    /**
+     * Updates a queue by deleting and recreating it using PowerShell.
+     * Returns true if update successful, false otherwise.
+     */
     @Override
     public boolean updateQueue(String queuePath, MsmqQueue queue) {
         try {
-            log.info("Updating queue via PowerShell MSMQ: {}", queuePath);
+            log.info("Updating queue via PowerShell: {}", queuePath);
             // PowerShell MSMQ doesn't have a direct update method
             // We'll need to delete and recreate the queue
             if (deleteQueue(queuePath)) {
@@ -472,10 +524,14 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
         }
     }
 
+    /**
+     * Gets queue statistics using PowerShell.
+     * Returns Optional.empty() if not found or error occurs.
+     */
     @Override
     public Optional<MsmqQueue> getQueueStatistics(String queuePath) {
         try {
-            log.debug("Getting queue statistics via PowerShell MSMQ: {}", queuePath);
+            log.debug("Getting queue statistics via PowerShell: {}", queuePath);
             // PowerShell MSMQ provides basic queue information
             if (queueExists(queuePath)) {
                 MsmqQueue queue = new MsmqQueue();
@@ -485,13 +541,15 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 // TODO: Add more statistics like message count, etc.
                 return Optional.of(queue);
             }
-            return Optional.empty();
         } catch (Exception e) {
             log.error("Error getting queue statistics for {} via PowerShell: {}", queuePath, e.getMessage(), e);
-            return Optional.empty();
         }
+        return Optional.empty();
     }
 
+    /**
+     * Receives a message with timeout (not implemented, falls back to basic receive).
+     */
     @Override
     public Optional<MsmqMessage> receiveMessage(String queuePath, long timeout) {
         // For now, ignore timeout and use the basic receive method
@@ -499,6 +557,9 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
         return receiveMessage(queuePath);
     }
 
+    /**
+     * Peeks a message with timeout (not implemented, falls back to basic peek).
+     */
     @Override
     public Optional<MsmqMessage> peekMessage(String queuePath, long timeout) {
         // For now, ignore timeout and use the basic peek method

@@ -78,9 +78,8 @@ public interface IMsmqQueueManager {
      * Purges all messages from a queue.
      *
      * @param queuePath the path/name of the queue to purge
-     * @return true if queue purged successfully, false otherwise
      */
-    boolean purgeQueue(String queuePath);
+    void purgeQueue(String queuePath);
 
     /**
      * Gets all available queues.
