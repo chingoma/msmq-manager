@@ -237,7 +237,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
 
     /**
      * Sends a raw message body to a remote MSMQ queue using PowerShell with TCP protocol.
-     * The remoteQueuePath should be the full MSMQ TCP path, e.g., TCP:192.168.1.100\private$\QueueName
+     * The remoteQueuePath should be the full MSMQ TCP path, e.g., TCP:192.168.1.100\private$\QueueName,
      * or it can be UNC path which will be converted to TCP format automatically.
      * Handles process exit codes and logs errors and PowerShell output.
      */
@@ -251,24 +251,45 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
 
             // Use a temporary file approach to avoid PowerShell here-string formatting issues
             String tempFile = System.getProperty("java.io.tmpdir") + "\\msmq_message_" + System.currentTimeMillis() + ".xml";
-            // Write message to temporary file
             try (java.io.FileWriter writer = new java.io.FileWriter(tempFile)) {
                 writer.write(messageBody);
             }
-            String command = "Add-Type -AssemblyName System.Messaging; " +
-                "$queuePath = '" + tcpQueuePath.replace("\\", "\\\\") + "'; " +
-                "try { " +
-                "    $queue = New-Object System.Messaging.MessageQueue $queuePath; " +
-                "    $queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
-                "    $xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
-                "    $queue.Send($xmlPayload, 'MSMQ Manager TCP Message'); " +
-                "    Write-Host 'SUCCESS' " +
-                "} catch { " +
-                "    Write-Host 'FAILED - ' + $_.Exception.Message " +
-                "} finally { " +
-                "    if ($queue) { $queue.Close(); } " +
-                "    Remove-Item '" + tempFile.replace("\\", "\\\\") + "' -Force -ErrorAction SilentlyContinue " +
-                "}";
+
+            String command;
+            if (tcpQueuePath.toUpperCase().startsWith("FORMATNAME:")) {
+                // Use constructor approach for FormatName (same as working test script)
+                // Don't double-escape backslashes for FormatName paths
+                command = "Add-Type -AssemblyName System.Messaging; " +
+                    "$queuePath = '" + tcpQueuePath + "'; " +
+                    "$queue = New-Object System.Messaging.MessageQueue $queuePath; " +
+                    "$queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
+                    "$xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
+                    "try { " +
+                    "    $queue.Send($xmlPayload, 'MSMQ Manager TCP Message'); " +
+                    "    Write-Host 'SUCCESS' " +
+                    "} catch { " +
+                    "    Write-Host 'FAILED - ' + $_.Exception.Message " +
+                    "} finally { " +
+                    "    if ($queue) { $queue.Close(); } " +
+                    "    Remove-Item '" + tempFile.replace("\\", "\\\\") + "' -Force -ErrorAction SilentlyContinue " +
+                    "}";
+            } else {
+                // Use constructor for local/normal queue (keep double-escaping for non-FormatName paths)
+                command = "Add-Type -AssemblyName System.Messaging; " +
+                    "$queuePath = '" + tcpQueuePath.replace("\\", "\\\\") + "'; " +
+                    "$queue = New-Object System.Messaging.MessageQueue $queuePath; " +
+                    "$queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
+                    "$xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
+                    "try { " +
+                    "    $queue.Send($xmlPayload, 'MSMQ Manager TCP Message'); " +
+                    "    Write-Host 'SUCCESS' " +
+                    "} catch { " +
+                    "    Write-Host 'FAILED - ' + $_.Exception.Message " +
+                    "} finally { " +
+                    "    if ($queue) { $queue.Close(); } " +
+                    "    Remove-Item '" + tempFile.replace("\\", "\\\\") + "' -Force -ErrorAction SilentlyContinue " +
+                    "}";
+            }
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             // Capture both standard output and error output
             StringBuilder outputBuilder = new StringBuilder();
@@ -304,15 +325,24 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
             errorThread.join();
             String output = outputBuilder.toString().trim();
             String errorOutput = errorBuilder.toString().trim();
+
+            // Enhanced logging for debugging
+            log.debug("PowerShell command executed: {}", command.substring(0, Math.min(command.length(), 200)) + "...");
+            log.debug("PowerShell exit code: {}", exitCode);
+            log.debug("PowerShell stdout: '{}'", output);
+            log.debug("PowerShell stderr: '{}'", errorOutput);
+
             if (exitCode == 0) {
                 if (output.contains("SUCCESS")) {
                     log.info("Successfully sent message to remote queue via PowerShell: {}", remoteQueuePath);
                     return true;
                 } else if (output.contains("FAILED")) {
-                    log.error("Failed to send message to remote queue via PowerShell: {}", remoteQueuePath);
+                    String failureReason = extractFailureReason(output);
+                    log.error("Failed to send message to remote queue via PowerShell: {} - Reason: {}", remoteQueuePath, failureReason);
                     return false;
                 } else {
                     log.warn("Unknown PowerShell output for remote message sending: {}", output);
+                    log.warn("PowerShell error stream: {}", errorOutput);
                     return false;
                 }
             } else {
@@ -333,7 +363,8 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
     }
 
     /**
-     * Converts UNC path to proper MSMQ FormatName for remote connections.
+     * Converts UNC path to proper MSMQ format for remote connections.
+     * Returns the format that works with MessageQueue constructor.
      * Examples:
      * \\192.168.1.100\private$\QueueName -> FormatName:DIRECT=OS:192.168.1.100\private$\QueueName
      * TCP:192.168.1.100\private$\QueueName -> FormatName:DIRECT=TCP:192.168.1.100\private$\QueueName
@@ -828,5 +859,21 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
             log.error("Error getting queue statistics for {} via PowerShell: {}", queuePath, e.getMessage(), e);
         }
         return Optional.empty();
+    }
+
+    /**
+     * Extracts the failure reason from PowerShell output containing "FAILED - " prefix.
+     */
+    private String extractFailureReason(String output) {
+        if (output.contains("FAILED - ")) {
+            int startIndex = output.indexOf("FAILED - ") + 9;
+            String reason = output.substring(startIndex);
+            // Clean up the reason - take only the first line if there are multiple lines
+            if (reason.contains("\n")) {
+                reason = reason.substring(0, reason.indexOf("\n"));
+            }
+            return reason.trim();
+        }
+        return "Unknown failure reason";
     }
 }

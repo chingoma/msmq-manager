@@ -16,7 +16,16 @@ import java.util.UUID;
 /**
  * Service for handling securities settlement operations using MSMQ templates.
  * Generates paired RECE and DELI messages for securities transfers.
- * 
+ * <p>
+ * This service:
+ * <ul>
+ *   <li>Generates unique transaction IDs and a common reference ID for each settlement.</li>
+ *   <li>Sends both RECE (credit seller) and DELI (debit buyer) messages using the MSMQ template service.</li>
+ *   <li>Includes buyer_broker_bic and seller_broker_bic in both request and response.</li>
+ *   <li>Ensures the common reference ID is in the format 616964F32 (digit + 8 alphanumerics) and is unique.</li>
+ *   <li>Returns a detailed response with transaction IDs, status, and error messages if any.</li>
+ * </ul>
+ *
  * @author Enterprise Development Team
  * @version 1.0.0
  * @since 2025-08-30
@@ -37,9 +46,9 @@ public class SecuritiesSettlementService {
 
     /**
      * Sends paired RECE and DELI messages for securities settlement.
-     * 
-     * @param settlementRequest the settlement request containing investor and security details
-     * @return SecuritiesSettlementResponse with transaction IDs and status information
+     *
+     * @param settlementRequest the settlement request containing investor, security, and broker details
+     * @return SecuritiesSettlementResponse with transaction IDs, status, and broker BICs
      */
     public SecuritiesSettlementResponse sendPairedSettlement(SecuritiesSettlementRequest settlementRequest) {
         try {
@@ -53,16 +62,14 @@ public class SecuritiesSettlementService {
 
             // Generate or use provided common reference ID
             String commonReferenceId = generateCommonReferenceId();
-            // Generate correlation ID
-            String correlationId = generateCorrelationId();
 
             // Send RECE message (credits seller)
             boolean receSent = sendReceMessage(settlementRequest, 
-                                            receTransactionId, deliTransactionId, correlationId, commonReferenceId);
+                                            receTransactionId, deliTransactionId, commonReferenceId);
 
             // Send DELI message (debits buyer)
             boolean deliSent = sendDeliMessage(settlementRequest, 
-                                             deliTransactionId, receTransactionId, correlationId, commonReferenceId);
+                                             deliTransactionId, receTransactionId, commonReferenceId);
 
             // Build response
             SecuritiesSettlementResponse response = SecuritiesSettlementResponse.builder()
@@ -70,7 +77,6 @@ public class SecuritiesSettlementService {
                 .baseTransactionId(baseTransactionId)
                 .receTransactionId(receTransactionId)
                 .deliTransactionId(deliTransactionId)
-                .correlationId(correlationId)
                 .commonReferenceId(commonReferenceId)
                 .queueName(settlementRequest.getQueueName())
                 .isinCode(settlementRequest.getIsinCode())
@@ -112,9 +118,9 @@ public class SecuritiesSettlementService {
      * Sends RECE message (credits seller's account).
      */
     private boolean sendReceMessage(SecuritiesSettlementRequest request, 
-                                  String receTxId, String deliTxId, String correlationId, String commonReferenceId) {
+                                  String receTxId, String deliTxId, String commonReferenceId) {
         try {
-            Map<String, String> parameters = buildReceParameters(request, receTxId, deliTxId, correlationId, commonReferenceId);
+            Map<String, String> parameters = buildReceParameters(request, receTxId, deliTxId, commonReferenceId);
 
             // Use existing template service to send message
             boolean success = templateService.sendMessageUsingTemplate(
@@ -122,7 +128,7 @@ public class SecuritiesSettlementService {
                 request.getQueueName(), 
                 parameters, 
                 1,
-                correlationId
+                null
             );
 
             if (success) {
@@ -143,9 +149,9 @@ public class SecuritiesSettlementService {
      * Sends DELI message (debits buyer's account).
      */
     private boolean sendDeliMessage(SecuritiesSettlementRequest request, 
-                                  String deliTxId, String receTxId, String correlationId, String commonReferenceId) {
+                                  String deliTxId, String receTxId, String commonReferenceId) {
         try {
-            Map<String, String> parameters = buildDeliParameters(request, deliTxId, receTxId, correlationId, commonReferenceId);
+            Map<String, String> parameters = buildDeliParameters(request, deliTxId, receTxId, commonReferenceId);
 
             // Use existing template service to send message
             boolean success = templateService.sendMessageUsingTemplate(
@@ -153,7 +159,7 @@ public class SecuritiesSettlementService {
                 request.getQueueName(), 
                 parameters, 
                 1,
-                correlationId
+                null
             );
 
             if (success) {
@@ -172,9 +178,15 @@ public class SecuritiesSettlementService {
 
     /**
      * Builds parameters for RECE message (credits seller).
+     *
+     * @param request the settlement request
+     * @param receTxId transaction ID for RECE message
+     * @param deliTxId linked DELI transaction ID
+     * @param commonReferenceId unique common reference ID (format: digit + 8 alphanumerics)
+     * @return map of parameters for the RECE message template
      */
     private Map<String, String> buildReceParameters(SecuritiesSettlementRequest request, 
-                                                   String receTxId, String deliTxId, String correlationId, String commonReferenceId) {
+                                                   String receTxId, String deliTxId, String commonReferenceId) {
         Map<String, String> parameters = new HashMap<>();
         
         // Basic SWIFT header parameters (based on your rece.xml)
@@ -254,9 +266,15 @@ public class SecuritiesSettlementService {
 
     /**
      * Builds parameters for DELI message (debits buyer).
+     *
+     * @param request the settlement request
+     * @param deliTxId transaction ID for DELI message
+     * @param receTxId linked RECE transaction ID
+     * @param commonReferenceId unique common reference ID (format: digit + 8 alphanumerics)
+     * @return map of parameters for the DELI message template
      */
     private Map<String, String> buildDeliParameters(SecuritiesSettlementRequest request, 
-                                                   String deliTxId, String receTxId, String correlationId, String commonReferenceId) {
+                                                   String deliTxId, String receTxId, String commonReferenceId) {
         Map<String, String> parameters = new HashMap<>();
         
         // Basic SWIFT header parameters (based on your deli.xml)
@@ -336,6 +354,8 @@ public class SecuritiesSettlementService {
 
     /**
      * Generates a unique base transaction ID.
+     * Format: YYMMDD + 6 random uppercase alphanumeric characters.
+     * @return base transaction ID string
      */
     private String generateBaseTransactionId() {
         // Generate format: YYMMDD + random 6 chars
@@ -345,15 +365,9 @@ public class SecuritiesSettlementService {
     }
 
     /**
-     * Generates a correlation ID if none provided.
-     */
-    private String generateCorrelationId() {
-        return "CORR-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    /**
      * Generates a unique 9-character common reference ID (e.g., 616964F32).
      * The first character is a digit, followed by 8 alphanumeric characters.
+     * @return unique common reference ID
      */
     private String generateCommonReferenceId() {
         StringBuilder sb = new StringBuilder(9);

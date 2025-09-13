@@ -16,6 +16,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.StringReader;
+import java.io.StringWriter;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
 
 /**
  * Service for managing MSMQ Message Templates.
@@ -121,10 +132,11 @@ public class MsmqMessageTemplateService {
         
         // Merge template with parameters
         String mergedContent = mergeTemplateWithParameters(template.getTemplateContent(), parameters);
-        logger.info("mergedContent: {}", mergedContent);
+        // Pretty-print the merged XML
+        String prettyXml = prettyPrintXml(mergedContent);
         // Create MsmqMessage object
         MsmqMessage message = new MsmqMessage();
-        message.setBody(mergedContent);
+        message.setBody(prettyXml);
         message.setPriority(priority != null ? priority : 1);
         message.setCorrelationId(correlationId);
         message.setLabel("Template Message: " + templateName);
@@ -132,8 +144,17 @@ public class MsmqMessageTemplateService {
         // Send message to MSMQ
         try {
             IMsmqQueueManager queueManager = queueManagerFactory.createQueueManager();
-            boolean messageSent = queueManager.sendMessage(queueName, message);
-            
+            boolean messageSent;
+
+            // Check if queueName is already a FormatName path (for remote queues)
+            if (queueName.toUpperCase().startsWith("FORMATNAME:")) {
+                // Use the single-parameter version for full FormatName paths
+                messageSent = queueManager.sendMessageToRemote(queueName, message);
+            } else {
+                // Use the two-parameter version for simple queue names with remote machine
+                messageSent = queueManager.sendMessageToRemote("192.168.2.170", queueName, message);
+            }
+
             if (messageSent) {
                 logger.info("Successfully sent message using template: {} to queue: {}", templateName, queueName);
                 return true;
@@ -175,6 +196,41 @@ public class MsmqMessageTemplateService {
         }
         
         return mergedContent;
+    }
+
+    /**
+     * Minify XML: output as a single line with no spaces between tags or lines.
+     * @param xml the raw XML string
+     * @return minified XML string (valid XML, single line, no newlines)
+     */
+    public static String prettyPrintXml(String xml) {
+        try {
+            // Parse XML into DOM
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(new java.io.ByteArrayInputStream(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            doc.normalizeDocument();
+
+            // Set up transformer for minified output
+            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "no");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+
+            StringWriter stringWriter = new StringWriter();
+            transformer.transform(new javax.xml.transform.dom.DOMSource(doc), new StreamResult(stringWriter));
+            String minified = stringWriter.toString();
+
+            // Remove ALL whitespace between tags (newlines, spaces, tabs)
+            minified = minified.replaceAll(">\\s+<", "><");
+            // Remove any remaining newlines
+            minified = minified.replaceAll("\\r?\\n", "");
+
+            return minified.trim();
+        } catch (Exception e) {
+            logger.warn("Failed to minify XML, sending as-is", e);
+            return xml;
+        }
     }
 
     /**
