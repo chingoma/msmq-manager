@@ -333,34 +333,42 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
     }
 
     /**
-     * Converts UNC path to TCP format for MSMQ remote connections.
+     * Converts UNC path to proper MSMQ FormatName for remote connections.
      * Examples:
-     * \\192.168.1.100\private$\QueueName -> TCP:192.168.1.100\private$\QueueName
-     * \\ServerName\private$\QueueName -> TCP:ServerName\private$\QueueName
-     * TCP:192.168.1.100\private$\QueueName -> TCP:192.168.1.100\private$\QueueName (no change)
+     * \\192.168.1.100\private$\QueueName -> FormatName:DIRECT=OS:192.168.1.100\private$\QueueName
+     * TCP:192.168.1.100\private$\QueueName -> FormatName:DIRECT=TCP:192.168.1.100\private$\QueueName
+     * 192.168.1.100\private$\QueueName -> FormatName:DIRECT=OS:192.168.1.100\private$\QueueName
      */
     private String convertToTcpPath(String queuePath) {
         if (queuePath == null || queuePath.trim().isEmpty()) {
             throw new IllegalArgumentException("Queue path cannot be null or empty");
         }
 
-        // If already TCP format, return as is
-        if (queuePath.toUpperCase().startsWith("TCP:")) {
+        // If already FormatName format, return as is
+        if (queuePath.toUpperCase().startsWith("FORMATNAME:")) {
             return queuePath;
         }
 
-        // Convert UNC path (\\server\private$\queue) to TCP format
+        // If it's TCP: format, convert to FormatName:DIRECT=TCP:
+        if (queuePath.toUpperCase().startsWith("TCP:")) {
+            String pathWithoutTcp = queuePath.substring(4); // Remove "TCP:"
+            return "FormatName:DIRECT=TCP:" + pathWithoutTcp;
+        }
+
+        // Convert UNC path (\\server\private$\queue) to FormatName OS format
         if (queuePath.startsWith("\\\\")) {
-            return "TCP:" + queuePath.substring(2); // Remove \\ and add TCP:
+            String pathWithoutUNC = queuePath.substring(2); // Remove "\\"
+            return "FormatName:DIRECT=OS:" + pathWithoutUNC;
         }
 
-        // If it's just server\private$\queue format, add TCP:
-        if (!queuePath.contains("\\\\") && queuePath.contains("\\")) {
-            return "TCP:" + queuePath;
+        // If it's just server\private$\queue format, use OS (native) protocol by default
+        if (queuePath.contains("\\")) {
+            return "FormatName:DIRECT=OS:" + queuePath;
         }
 
-        // Default case - assume it needs TCP: prefix
-        return "TCP:" + queuePath;
+        // Default case - assume it's a server name and needs path completion
+        throw new IllegalArgumentException("Invalid queue path format: " + queuePath +
+            ". Expected formats: '\\\\server\\private$\\queue', 'TCP:server\\private$\\queue', or 'FormatName:DIRECT=...'");
     }
 
     /**

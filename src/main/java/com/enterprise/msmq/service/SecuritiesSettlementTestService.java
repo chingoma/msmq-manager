@@ -42,7 +42,7 @@ public class SecuritiesSettlementTestService {
                 .buyerName("Jane Smith")
                 .tradeDate("2025-08-29")
                 .settlementDate("2025-09-03")
-                .queueName("TCP:192.168.2.170\\private$\\securities-settlement-queue")  // Fixed TCP format
+                .queueName("FormatName:DIRECT=TCP:192.168.2.170\\private$\\securities-settlement-queue")  // Fixed FormatName format
                 .buyerBrokerBic("BUYERBICXXX")
                 .sellerBrokerBic("SELLERBICXXX")
                 .isinCode("TZ1996100214")
