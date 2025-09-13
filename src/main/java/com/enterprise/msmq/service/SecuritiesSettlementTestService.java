@@ -65,15 +65,15 @@ public class SecuritiesSettlementTestService {
                 log.error("❌ [Remotely] Securities settlement test failed!");
             }
 
-            // Execute the settlement locally
-            SecuritiesSettlementResponse responseLocally = settlementService.sendPairedSettlement(request,"local");
-
-            // Log the results
-            if (responseLocally.isSuccess()) {
-                log.info("✅ [Locally] Securities settlement test completed successfully!");
-            } else {
-                log.error("❌ [Locally] Securities settlement test failed!");
-            }
+//            // Execute the settlement locally
+//            SecuritiesSettlementResponse responseLocally = settlementService.sendPairedSettlement(request,"local");
+//
+//            // Log the results
+//            if (responseLocally.isSuccess()) {
+//                log.info("✅ [Locally] Securities settlement test completed successfully!");
+//            } else {
+//                log.error("❌ [Locally] Securities settlement test failed!");
+//            }
 
         } catch (Exception e) {
             log.error("❌ Error during securities settlement test", e);

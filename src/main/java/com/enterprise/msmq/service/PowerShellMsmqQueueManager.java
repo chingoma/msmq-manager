@@ -161,10 +161,12 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 "    [System.Messaging.MessageQueue]::Create($queuePath, $true) | Out-Null " +
                 "}; " +
                 "$queue = New-Object System.Messaging.MessageQueue $queuePath; " +
-                "$queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
+                "$queue.Formatter = New-Object System.Messaging.XmlMessageFormatter([Type[]]@( [System.Xml.XmlDocument] )); " +
                 "$xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
+                "$xmlDoc = New-Object System.Xml.XmlDocument; " +
+                "$xmlDoc.LoadXml($xmlPayload); " +
                 "try { " +
-                "    $queue.Send($xmlPayload, 'MSMQ Manager Message'); " +
+                "    $queue.Send($xmlDoc, 'MSMQ Manager XML Message'); " +
                 "    Write-Host 'SUCCESS' " +
                 "} catch { " +
                 "    Write-Host 'FAILED - ' + $_.Exception.Message " +
@@ -263,10 +265,12 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 command = "Add-Type -AssemblyName System.Messaging; " +
                     "$queuePath = '" + tcpQueuePath + "'; " +
                     "$queue = New-Object System.Messaging.MessageQueue $queuePath; " +
-                    "$queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
-                    "$xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
-                    "try { " +
-                    "    $queue.Send($xmlPayload, 'MSMQ Manager TCP Message'); " +
+                    "$queue.Formatter = New-Object System.Messaging.XmlMessageFormatter([Type[]]@( [System.Xml.XmlDocument] )); " +
+                "$xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
+                "$xmlDoc = New-Object System.Xml.XmlDocument; " +
+                "$xmlDoc.LoadXml($xmlPayload); " +
+                "try { " +
+                "    $queue.Send($xmlDoc, 'MSMQ Manager TCP XML Message'); " +
                     "    Write-Host 'SUCCESS' " +
                     "} catch { " +
                     "    Write-Host 'FAILED - ' + $_.Exception.Message " +
@@ -279,10 +283,12 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 command = "Add-Type -AssemblyName System.Messaging; " +
                     "$queuePath = '" + tcpQueuePath.replace("\\", "\\\\") + "'; " +
                     "$queue = New-Object System.Messaging.MessageQueue $queuePath; " +
-                    "$queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
-                    "$xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
-                    "try { " +
-                    "    $queue.Send($xmlPayload, 'MSMQ Manager TCP Message'); " +
+                    "$queue.Formatter = New-Object System.Messaging.XmlMessageFormatter([Type[]]@( [System.Xml.XmlDocument] )); " +
+                "$xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
+                "$xmlDoc = New-Object System.Xml.XmlDocument; " +
+                "$xmlDoc.LoadXml($xmlPayload); " +
+                "try { " +
+                "    $queue.Send($xmlDoc, 'MSMQ Manager TCP XML Message'); " +
                     "    Write-Host 'SUCCESS' " +
                     "} catch { " +
                     "    Write-Host 'FAILED - ' + $_.Exception.Message " +

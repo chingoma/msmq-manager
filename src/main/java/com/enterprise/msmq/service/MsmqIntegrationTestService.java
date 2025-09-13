@@ -221,9 +221,9 @@ public class MsmqIntegrationTestService {
             // Send message using template with correct method signature
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SHARE_TRANSFER_DETAILED", 
-                "testqueue",
+                "FormatName:DIRECT=TCP:192.168.2.170\\private$\\crdb_to_dse", // queue name
                 parameters,
-                "local", // connection type
+                "remote", // connection type
                 1, // priority
                null
             );
@@ -280,7 +280,6 @@ public class MsmqIntegrationTestService {
             
             // Template content based on your exact rece.xml and deli.xml structure
             String templateContent = """
-                <?xml version="1.0" encoding="utf-8" ?>
                 <RequestPayload
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
