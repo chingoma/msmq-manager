@@ -236,6 +236,172 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
     }
 
     /**
+     * Sends a raw message body to a remote MSMQ queue using PowerShell with TCP protocol.
+     * The remoteQueuePath should be the full MSMQ TCP path, e.g., TCP:192.168.1.100\private$\QueueName
+     * or it can be UNC path which will be converted to TCP format automatically.
+     * Handles process exit codes and logs errors and PowerShell output.
+     */
+    public boolean sendMessageToRemote(String remoteQueuePath, String messageBody) {
+        try {
+            log.info("Sending message to remote queue via PowerShell using TCP: {}", remoteQueuePath);
+
+            // Convert UNC path to TCP format if needed
+            String tcpQueuePath = convertToTcpPath(remoteQueuePath);
+            log.debug("Using TCP queue path: {}", tcpQueuePath);
+
+            // Use a temporary file approach to avoid PowerShell here-string formatting issues
+            String tempFile = System.getProperty("java.io.tmpdir") + "\\msmq_message_" + System.currentTimeMillis() + ".xml";
+            // Write message to temporary file
+            try (java.io.FileWriter writer = new java.io.FileWriter(tempFile)) {
+                writer.write(messageBody);
+            }
+            String command = "Add-Type -AssemblyName System.Messaging; " +
+                "$queuePath = '" + tcpQueuePath.replace("\\", "\\\\") + "'; " +
+                "try { " +
+                "    $queue = New-Object System.Messaging.MessageQueue $queuePath; " +
+                "    $queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
+                "    $xmlPayload = Get-Content '" + tempFile.replace("\\", "\\\\") + "' -Raw; " +
+                "    $queue.Send($xmlPayload, 'MSMQ Manager TCP Message'); " +
+                "    Write-Host 'SUCCESS' " +
+                "} catch { " +
+                "    Write-Host 'FAILED - ' + $_.Exception.Message " +
+                "} finally { " +
+                "    if ($queue) { $queue.Close(); } " +
+                "    Remove-Item '" + tempFile.replace("\\", "\\\\") + "' -Force -ErrorAction SilentlyContinue " +
+                "}";
+            Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
+            // Capture both standard output and error output
+            StringBuilder outputBuilder = new StringBuilder();
+            StringBuilder errorBuilder = new StringBuilder();
+            // Read standard output in a separate thread
+            Thread outputThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        outputBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading PowerShell output: {}", e.getMessage());
+                }
+            });
+            // Read error output in a separate thread
+            Thread errorThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        errorBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading PowerShell error output: {}", e.getMessage());
+                }
+            });
+            // Start both threads
+            outputThread.start();
+            errorThread.start();
+            int exitCode = process.waitFor();
+            // Wait for both threads to complete
+            outputThread.join();
+            errorThread.join();
+            String output = outputBuilder.toString().trim();
+            String errorOutput = errorBuilder.toString().trim();
+            if (exitCode == 0) {
+                if (output.contains("SUCCESS")) {
+                    log.info("Successfully sent message to remote queue via PowerShell: {}", remoteQueuePath);
+                    return true;
+                } else if (output.contains("FAILED")) {
+                    log.error("Failed to send message to remote queue via PowerShell: {}", remoteQueuePath);
+                    return false;
+                } else {
+                    log.warn("Unknown PowerShell output for remote message sending: {}", output);
+                    return false;
+                }
+            } else {
+                log.error("Failed to send message to remote PowerShell: {}, exit code: {}", remoteQueuePath, exitCode);
+                if (!errorOutput.isEmpty()) {
+                    log.error("PowerShell error output: {}", errorOutput);
+                }
+                if (!output.isEmpty()) {
+                    log.error("PowerShell standard output: {}", output);
+                }
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("Error sending message to remote queue {} via PowerShell TCP: {}",
+                remoteQueuePath, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Converts UNC path to TCP format for MSMQ remote connections.
+     * Examples:
+     * \\192.168.1.100\private$\QueueName -> TCP:192.168.1.100\private$\QueueName
+     * \\ServerName\private$\QueueName -> TCP:ServerName\private$\QueueName
+     * TCP:192.168.1.100\private$\QueueName -> TCP:192.168.1.100\private$\QueueName (no change)
+     */
+    private String convertToTcpPath(String queuePath) {
+        if (queuePath == null || queuePath.trim().isEmpty()) {
+            throw new IllegalArgumentException("Queue path cannot be null or empty");
+        }
+
+        // If already TCP format, return as is
+        if (queuePath.toUpperCase().startsWith("TCP:")) {
+            return queuePath;
+        }
+
+        // Convert UNC path (\\server\private$\queue) to TCP format
+        if (queuePath.startsWith("\\\\")) {
+            return "TCP:" + queuePath.substring(2); // Remove \\ and add TCP:
+        }
+
+        // If it's just server\private$\queue format, add TCP:
+        if (!queuePath.contains("\\\\") && queuePath.contains("\\")) {
+            return "TCP:" + queuePath;
+        }
+
+        // Default case - assume it needs TCP: prefix
+        return "TCP:" + queuePath;
+    }
+
+    /**
+     * Convenience method to send message to remote queue using TCP with separate machine and queue name.
+     * This method constructs the full TCP path automatically.
+     *
+     * @param remoteMachine The remote machine name or IP address
+     * @param queueName The queue name (without path prefix)
+     * @param messageBody The message content to send
+     * @return true if message sent successfully, false otherwise
+     */
+    public boolean sendMessageToRemote(String remoteMachine, String queueName, String messageBody) {
+        String tcpQueuePath = "TCP:" + remoteMachine + "\\private$\\" + queueName;
+        return sendMessageToRemote(tcpQueuePath, messageBody);
+    }
+
+    /**
+     * Convenience method to send MsmqMessage object to remote queue.
+     *
+     * @param remoteQueuePath Full remote queue path (e.g., \\RemoteMachine\private$\QueueName)
+     * @param message The MsmqMessage object to send
+     * @return true if message sent successfully, false otherwise
+     */
+    public boolean sendMessageToRemote(String remoteQueuePath, MsmqMessage message) {
+        return sendMessageToRemote(remoteQueuePath, message.getBody());
+    }
+
+    /**
+     * Convenience method to send MsmqMessage object to remote queue by specifying remote machine and queue name.
+     *
+     * @param remoteMachine The remote machine name or IP address
+     * @param queueName The queue name (without path prefix)
+     * @param message The MsmqMessage object to send
+     * @return true if message sent successfully, false otherwise
+     */
+    public boolean sendMessageToRemote(String remoteMachine, String queueName, MsmqMessage message) {
+        String tcpQueuePath = "TCP:" + remoteMachine + "\\private$\\" + queueName;
+        return sendMessageToRemote(tcpQueuePath, message.getBody());
+    }
+
+    /**
      * Receives a message from a queue using PowerShell.
      * Returns Optional.empty() if no message or error.
      */
@@ -247,14 +413,15 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 "if ([System.Messaging.MessageQueue]::Exists($queuePath)) { " +
                 "    $queue = New-Object System.Messaging.MessageQueue $queuePath; " +
                 "    $queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
-                "    $message = $queue.Receive([System.Messaging.MessageQueueTransaction]::Single); " +
-                "    if ($message) { " +
+                "    try { " +
+                "        $message = $queue.Receive(); " +
                 "        Write-Host $message.Body; " +
                 "        Write-Host 'SUCCESS' " +
-                "    } else { " +
+                "    } catch { " +
                 "        Write-Host 'NO_MESSAGE' " +
+                "    } finally { " +
+                "        $queue.Close(); " +
                 "    } " +
-                "    $queue.Close(); " +
                 "} else { " +
                 "    Write-Host 'QUEUE_NOT_FOUND' " +
                 "}";
@@ -273,25 +440,74 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                             messageBody.append(line).append("\n");
                         }
                     }
-                    if ("SUCCESS".equals(status) && !messageBody.isEmpty()) {
+                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
                         MsmqMessage message = new MsmqMessage();
                         message.setMessageId(UUID.randomUUID().toString());
                         message.setBody(messageBody.toString().trim());
                         message.setSourceQueue(queuePath);
                         message.setCreatedTime(LocalDateTime.now());
                         return Optional.of(message);
-                    } else if ("NO_MESSAGE".equals(status)) {
-                        return Optional.empty();
-                    } else {
-                        log.warn("Queue not found or error receiving message: {}", status);
-                        return Optional.empty();
                     }
                 }
-            } else {
-                log.error("Failed to receive message from queue: {}, exit code: {}", queuePath, exitCode);
             }
         } catch (Exception e) {
             log.error("Error receiving message from queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Receives a message from a queue with timeout using PowerShell.
+     * Returns Optional.empty() if no message, timeout or error.
+     */
+    @Override
+    public Optional<MsmqMessage> receiveMessage(String queuePath, long timeout) {
+        try {
+            String command = "Add-Type -AssemblyName System.Messaging; " +
+                "$queuePath = '.\\private$\\" + queuePath + "'; " +
+                "if ([System.Messaging.MessageQueue]::Exists($queuePath)) { " +
+                "    $queue = New-Object System.Messaging.MessageQueue $queuePath; " +
+                "    $queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
+                "    try { " +
+                "        $timeout = [TimeSpan]::FromMilliseconds(" + timeout + "); " +
+                "        $message = $queue.Receive($timeout); " +
+                "        Write-Host $message.Body; " +
+                "        Write-Host 'SUCCESS' " +
+                "    } catch { " +
+                "        Write-Host 'NO_MESSAGE' " +
+                "    } finally { " +
+                "        $queue.Close(); " +
+                "    } " +
+                "} else { " +
+                "    Write-Host 'QUEUE_NOT_FOUND' " +
+                "}";
+            Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    StringBuilder messageBody = new StringBuilder();
+                    String status = "";
+                    while ((line = reader.readLine()) != null) {
+                        if (line.equals("SUCCESS") || line.equals("NO_MESSAGE") || line.equals("QUEUE_NOT_FOUND")) {
+                            status = line;
+                            break;
+                        } else {
+                            messageBody.append(line).append("\n");
+                        }
+                    }
+                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
+                        MsmqMessage message = new MsmqMessage();
+                        message.setMessageId(UUID.randomUUID().toString());
+                        message.setBody(messageBody.toString().trim());
+                        message.setSourceQueue(queuePath);
+                        message.setCreatedTime(LocalDateTime.now());
+                        return Optional.of(message);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error receiving message from queue {} with timeout via PowerShell: {}", queuePath, e.getMessage(), e);
         }
         return Optional.empty();
     }
@@ -308,14 +524,15 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 "if ([System.Messaging.MessageQueue]::Exists($queuePath)) { " +
                 "    $queue = New-Object System.Messaging.MessageQueue $queuePath; " +
                 "    $queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
-                "    $message = $queue.Peek(); " +
-                "    if ($message) { " +
+                "    try { " +
+                "        $message = $queue.Peek(); " +
                 "        Write-Host $message.Body; " +
                 "        Write-Host 'SUCCESS' " +
-                "    } else { " +
+                "    } catch { " +
                 "        Write-Host 'NO_MESSAGE' " +
+                "    } finally { " +
+                "        $queue.Close(); " +
                 "    } " +
-                "    $queue.Close(); " +
                 "} else { " +
                 "    Write-Host 'QUEUE_NOT_FOUND' " +
                 "}";
@@ -334,25 +551,74 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                             messageBody.append(line).append("\n");
                         }
                     }
-                    if ("SUCCESS".equals(status) && !messageBody.isEmpty()) {
+                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
                         MsmqMessage message = new MsmqMessage();
                         message.setMessageId(UUID.randomUUID().toString());
                         message.setBody(messageBody.toString().trim());
                         message.setSourceQueue(queuePath);
                         message.setCreatedTime(LocalDateTime.now());
                         return Optional.of(message);
-                    } else if ("NO_MESSAGE".equals(status)) {
-                        return Optional.empty();
-                    } else {
-                        log.warn("Queue not found or error peeking message: {}", status);
-                        return Optional.empty();
                     }
                 }
-            } else {
-                log.error("Failed to peek message from queue: {}, exit code: {}", queuePath, exitCode);
             }
         } catch (Exception e) {
             log.error("Error peeking message from queue {} via PowerShell: {}", queuePath, e.getMessage(), e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Peeks at a message in a queue with timeout using PowerShell.
+     * Returns Optional.empty() if no message, timeout or error.
+     */
+    @Override
+    public Optional<MsmqMessage> peekMessage(String queuePath, long timeout) {
+        try {
+            String command = "Add-Type -AssemblyName System.Messaging; " +
+                "$queuePath = '.\\private$\\" + queuePath + "'; " +
+                "if ([System.Messaging.MessageQueue]::Exists($queuePath)) { " +
+                "    $queue = New-Object System.Messaging.MessageQueue $queuePath; " +
+                "    $queue.Formatter = New-Object System.Messaging.ActiveXMessageFormatter; " +
+                "    try { " +
+                "        $timeout = [TimeSpan]::FromMilliseconds(" + timeout + "); " +
+                "        $message = $queue.Peek($timeout); " +
+                "        Write-Host $message.Body; " +
+                "        Write-Host 'SUCCESS' " +
+                "    } catch { " +
+                "        Write-Host 'NO_MESSAGE' " +
+                "    } finally { " +
+                "        $queue.Close(); " +
+                "    } " +
+                "} else { " +
+                "    Write-Host 'QUEUE_NOT_FOUND' " +
+                "}";
+            Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    StringBuilder messageBody = new StringBuilder();
+                    String status = "";
+                    while ((line = reader.readLine()) != null) {
+                        if (line.equals("SUCCESS") || line.equals("NO_MESSAGE") || line.equals("QUEUE_NOT_FOUND")) {
+                            status = line;
+                            break;
+                        } else {
+                            messageBody.append(line).append("\n");
+                        }
+                    }
+                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
+                        MsmqMessage message = new MsmqMessage();
+                        message.setMessageId(UUID.randomUUID().toString());
+                        message.setBody(messageBody.toString().trim());
+                        message.setSourceQueue(queuePath);
+                        message.setCreatedTime(LocalDateTime.now());
+                        return Optional.of(message);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error peeking message from queue {} with timeout via PowerShell: {}", queuePath, e.getMessage(), e);
         }
         return Optional.empty();
     }
@@ -511,10 +777,9 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
     @Override
     public boolean updateQueue(String queuePath, MsmqQueue queue) {
         try {
-            log.info("Updating queue via PowerShell: {}", queuePath);
-            // PowerShell MSMQ doesn't have a direct update method
-            // We'll need to delete and recreate the queue
+            // Delete existing queue
             if (deleteQueue(queuePath)) {
+                // Create new queue with updated properties
                 return createQueue(queue);
             }
             return false;
@@ -526,44 +791,34 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
 
     /**
      * Gets queue statistics using PowerShell.
-     * Returns Optional.empty() if not found or error occurs.
+     * Returns queue information if found, empty otherwise.
      */
     @Override
     public Optional<MsmqQueue> getQueueStatistics(String queuePath) {
         try {
-            log.debug("Getting queue statistics via PowerShell: {}", queuePath);
-            // PowerShell MSMQ provides basic queue information
-            if (queueExists(queuePath)) {
-                MsmqQueue queue = new MsmqQueue();
-                queue.setName(queuePath.replace("private$\\", ""));
-                queue.setPath(queuePath);
-                queue.setType("PRIVATE");
-                // TODO: Add more statistics like message count, etc.
-                return Optional.of(queue);
+            String command = "Get-MsmqQueue -QueueType Private | Where-Object { $_.QueueName -like '*" + queuePath + "*' } | Select-Object -First 1";
+            Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line = reader.readLine();
+                    if (line != null && !line.trim().isEmpty()) {
+                        MsmqQueue queue = new MsmqQueue();
+                        queue.setName(queuePath.replace("private$\\", ""));
+                        queue.setPath(queuePath);
+                        queue.setType("PRIVATE");
+                        // Add message count if available
+                        long messageCount = getMessageCount(queuePath);
+                        if (messageCount >= 0) {
+                            queue.setDescription("Message Count: " + messageCount);
+                        }
+                        return Optional.of(queue);
+                    }
+                }
             }
         } catch (Exception e) {
             log.error("Error getting queue statistics for {} via PowerShell: {}", queuePath, e.getMessage(), e);
         }
         return Optional.empty();
-    }
-
-    /**
-     * Receives a message with timeout (not implemented, falls back to basic receive).
-     */
-    @Override
-    public Optional<MsmqMessage> receiveMessage(String queuePath, long timeout) {
-        // For now, ignore timeout and use the basic receive method
-        // TODO: Implement timeout-based receiving
-        return receiveMessage(queuePath);
-    }
-
-    /**
-     * Peeks a message with timeout (not implemented, falls back to basic peek).
-     */
-    @Override
-    public Optional<MsmqMessage> peekMessage(String queuePath, long timeout) {
-        // For now, ignore timeout and use the basic peek method
-        // TODO: Implement timeout-based peeking
-        return peekMessage(queuePath);
     }
 }
