@@ -50,7 +50,7 @@ public class SecuritiesSettlementService {
      * @param settlementRequest the settlement request containing investor, security, and broker details
      * @return SecuritiesSettlementResponse with transaction IDs, status, and broker BICs
      */
-    public SecuritiesSettlementResponse sendPairedSettlement(SecuritiesSettlementRequest settlementRequest) {
+    public SecuritiesSettlementResponse sendPairedSettlement(SecuritiesSettlementRequest settlementRequest, String environment) {
         try {
             logger.info("Starting paired settlement for security: {} with quantity: {}",
                        settlementRequest.getIsinCode(), settlementRequest.getQuantity());
@@ -65,11 +65,11 @@ public class SecuritiesSettlementService {
 
             // Send RECE message (credits seller)
             boolean receSent = sendReceMessage(settlementRequest, 
-                                            receTransactionId, deliTransactionId, commonReferenceId);
+                                            receTransactionId, deliTransactionId, commonReferenceId,environment);
 
             // Send DELI message (debits buyer)
             boolean deliSent = sendDeliMessage(settlementRequest, 
-                                             deliTransactionId, receTransactionId, commonReferenceId);
+                                             deliTransactionId, receTransactionId, commonReferenceId,environment);
 
             // Build response
             SecuritiesSettlementResponse response = SecuritiesSettlementResponse.builder()
@@ -118,7 +118,7 @@ public class SecuritiesSettlementService {
      * Sends RECE message (credits seller's account).
      */
     private boolean sendReceMessage(SecuritiesSettlementRequest request, 
-                                  String receTxId, String deliTxId, String commonReferenceId) {
+                                  String receTxId, String deliTxId, String commonReferenceId, String environment) {
         try {
             Map<String, String> parameters = buildReceParameters(request, receTxId, deliTxId, commonReferenceId);
 
@@ -126,7 +126,8 @@ public class SecuritiesSettlementService {
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SECURITIES_SETTLEMENT", 
                 request.getQueueName(), 
-                parameters, 
+                parameters,
+                environment,
                 1,
                 null
             );
@@ -149,7 +150,7 @@ public class SecuritiesSettlementService {
      * Sends DELI message (debits buyer's account).
      */
     private boolean sendDeliMessage(SecuritiesSettlementRequest request, 
-                                  String deliTxId, String receTxId, String commonReferenceId) {
+                                  String deliTxId, String receTxId, String commonReferenceId, String environment) {
         try {
             Map<String, String> parameters = buildDeliParameters(request, deliTxId, receTxId, commonReferenceId);
 
@@ -157,7 +158,8 @@ public class SecuritiesSettlementService {
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SECURITIES_SETTLEMENT", 
                 request.getQueueName(), 
-                parameters, 
+                parameters,
+                environment,
                 1,
                 null
             );

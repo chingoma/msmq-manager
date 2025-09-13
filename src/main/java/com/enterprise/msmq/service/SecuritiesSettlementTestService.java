@@ -42,7 +42,7 @@ public class SecuritiesSettlementTestService {
                 .buyerName("Jane Smith")
                 .tradeDate("2025-08-29")
                 .settlementDate("2025-09-03")
-                .queueName("FormatName:DIRECT=TCP:192.168.2.170\\private$\\securities-settlement-queue")  // Fixed FormatName format
+                .queueName("FormatName:DIRECT=TCP:192.168.2.170\\private$\\crdb_to_dse")  // Fixed FormatName format
                 .buyerBrokerBic("BUYERBICXXX")
                 .sellerBrokerBic("SELLERBICXXX")
                 .isinCode("TZ1996100214")
@@ -55,24 +55,24 @@ public class SecuritiesSettlementTestService {
             log.info("   Buyer: {} ({})", request.getBuyerName(), request.getBuyerAccountId());
             log.info("   Queue: {}", request.getQueueName());
 
-            // Execute the settlement
-            SecuritiesSettlementResponse response = settlementService.sendPairedSettlement(request);
+            // Execute the settlement remotely
+            SecuritiesSettlementResponse responseRemotely = settlementService.sendPairedSettlement(request,"remote");
 
             // Log the results
-            if (response.isSuccess()) {
-                log.info("✅ Securities settlement test completed successfully!");
-                log.info("   Base Transaction ID: {}", response.getBaseTransactionId());
-                log.info("   RECE Transaction ID: {}", response.getReceTransactionId());
-                log.info("   DELI Transaction ID: {}", response.getDeliTransactionId());
-                log.info("   Correlation ID: {}", response.getCorrelationId());
-                log.info("   RECE Status: {}", response.getReceStatus());
-                log.info("   DELI Status: {}", response.getDeliStatus());
-                log.info("   Processed At: {}", response.getProcessedAt());
+            if (responseRemotely.isSuccess()) {
+                log.info("✅ [Remotely] Securities settlement test completed successfully!");
             } else {
-                log.error("❌ Securities settlement test failed!");
-                log.error("   Error: {}", response.getErrorMessage());
-                log.error("   RECE Status: {}", response.getReceStatus());
-                log.error("   DELI Status: {}", response.getDeliStatus());
+                log.error("❌ [Remotely] Securities settlement test failed!");
+            }
+
+            // Execute the settlement locally
+            SecuritiesSettlementResponse responseLocally = settlementService.sendPairedSettlement(request,"local");
+
+            // Log the results
+            if (responseLocally.isSuccess()) {
+                log.info("✅ [Locally] Securities settlement test completed successfully!");
+            } else {
+                log.error("❌ [Locally] Securities settlement test failed!");
             }
 
         } catch (Exception e) {

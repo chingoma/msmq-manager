@@ -789,6 +789,7 @@ public class MsmqMessageTemplateController {
                     templateName,
                     queueName,
                     msgParameter,
+                    "local",  // Use "local" or "remote" based on your requirement
                     1,
                     null
             );
@@ -861,8 +862,8 @@ public class MsmqMessageTemplateController {
             String correlationId = request.getCorrelationId();
 
             // Send both legs
-            boolean receResult = templateService.sendMessageUsingTemplate(templateName, request.getQueueName(), rece, priority, correlationId);
-            boolean deliResult = templateService.sendMessageUsingTemplate(templateName, request.getQueueName(), deli, priority, correlationId);
+            boolean receResult = templateService.sendMessageUsingTemplate(templateName, request.getQueueName(), rece, "local", priority, correlationId);
+            boolean deliResult = templateService.sendMessageUsingTemplate(templateName, request.getQueueName(), deli,"local", priority, correlationId);
 
             Map<String, Boolean> result = new java.util.HashMap<>();
             result.put("RECE", receResult);

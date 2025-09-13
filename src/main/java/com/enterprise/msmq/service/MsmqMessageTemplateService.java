@@ -122,7 +122,7 @@ public class MsmqMessageTemplateService {
     /**
      * Send message using template and parameters.
      */
-    public boolean sendMessageUsingTemplate(String templateName, String queueName, Map<String, String> parameters, Integer priority, String correlationId) {
+    public boolean sendMessageUsingTemplate(String templateName, String queueName, Map<String, String> parameters, String environment, Integer priority, String correlationId) {
         MsmqMessageTemplate template = templateRepository.findByTemplateName(templateName)
             .orElseThrow(() -> new IllegalArgumentException("Template not found: " + templateName));
         
@@ -146,13 +146,17 @@ public class MsmqMessageTemplateService {
             IMsmqQueueManager queueManager = queueManagerFactory.createQueueManager();
             boolean messageSent;
 
-            // Check if queueName is already a FormatName path (for remote queues)
-            if (queueName.toUpperCase().startsWith("FORMATNAME:")) {
-                // Use the single-parameter version for full FormatName paths
-                messageSent = queueManager.sendMessageToRemote(queueName, message);
+            if(environment != null) {
+                if(environment.equalsIgnoreCase("remote")) {
+                    messageSent = queueManager.sendMessageToRemote(queueName, message);
+                } else if(environment.equalsIgnoreCase("local")) {
+                    messageSent = queueManager.sendMessage(queueName, message);
+                } else {
+                    throw new IllegalArgumentException("Invalid environment: " + environment);
+                }
             } else {
-                // Use the two-parameter version for simple queue names with remote machine
-                messageSent = queueManager.sendMessageToRemote("192.168.2.170", queueName, message);
+                // Default to remote if environment not specified
+                messageSent = queueManager.sendMessageToRemote(queueName, message);
             }
 
             if (messageSent) {

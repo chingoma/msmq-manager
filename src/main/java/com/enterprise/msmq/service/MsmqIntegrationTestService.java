@@ -221,10 +221,11 @@ public class MsmqIntegrationTestService {
             // Send message using template with correct method signature
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SHARE_TRANSFER_DETAILED", 
-                "testqueue", 
+                "testqueue",
                 parameters,
+                "local", // connection type
                 1, // priority
-                "SWIFT-TX-001" // correlationId
+               null
             );
             
             if (success) {

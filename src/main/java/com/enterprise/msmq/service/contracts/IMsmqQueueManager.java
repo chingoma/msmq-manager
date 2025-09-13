@@ -164,6 +164,8 @@ public interface IMsmqQueueManager {
      */
     boolean sendMessageToRemote(String remoteQueuePath, MsmqMessage message);
 
+    String convertToTcpPath(String queuePath);
+
     /**
      * Sends a raw message body to a remote MSMQ queue by specifying machine and queue name.
      *

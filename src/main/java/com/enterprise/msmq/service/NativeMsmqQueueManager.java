@@ -22,7 +22,7 @@ import java.util.UUID;
 
 /**
  * Native MSMQ Queue Manager using JNA.
- * 
+ * <p>
  * This implementation uses the native MSMQ API through JNA
  * for high-performance queue operations. It implements the 
  * IMsmqQueueManager interface to provide consistent queue management.
@@ -700,6 +700,39 @@ public class NativeMsmqQueueManager implements IMsmqQueueManager {
     @Override
     public boolean sendMessageToRemote(String remoteQueuePath, MsmqMessage message) {
         return sendMessageToRemote(remoteQueuePath, message.getBody());
+    }
+
+    @Override
+    public String convertToTcpPath(String queuePath) {
+        if (queuePath == null || queuePath.trim().isEmpty()) {
+            throw new IllegalArgumentException("Queue path cannot be null or empty");
+        }
+
+        // If already FormatName format, return as is
+        if (queuePath.toUpperCase().startsWith("FORMATNAME:")) {
+            return queuePath;
+        }
+
+        // If it's TCP: format, convert to FormatName:DIRECT=TCP:
+        if (queuePath.toUpperCase().startsWith("TCP:")) {
+            String pathWithoutTcp = queuePath.substring(4); // Remove "TCP:"
+            return "FormatName:DIRECT=TCP:" + pathWithoutTcp;
+        }
+
+        // Convert UNC path (\\server\private$\queue) to FormatName OS format
+        if (queuePath.startsWith("\\\\")) {
+            String pathWithoutUNC = queuePath.substring(2); // Remove "\\"
+            return "FormatName:DIRECT=OS:" + pathWithoutUNC;
+        }
+
+        // If it's just server\private$\queue format, use OS (native) protocol by default
+        if (queuePath.contains("\\")) {
+            return "FormatName:DIRECT=OS:" + queuePath;
+        }
+
+        // Default case - assume it's a server name and needs path completion
+        throw new IllegalArgumentException("Invalid queue path format: " + queuePath +
+                ". Expected formats: '\\\\server\\private$\\queue', 'TCP:server\\private$\\queue', or 'FormatName:DIRECT=...'");
     }
 
     /**

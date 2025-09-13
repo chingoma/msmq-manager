@@ -241,6 +241,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
      * or it can be UNC path which will be converted to TCP format automatically.
      * Handles process exit codes and logs errors and PowerShell output.
      */
+    @Override
     public boolean sendMessageToRemote(String remoteQueuePath, String messageBody) {
         try {
             log.info("Sending message to remote queue via PowerShell using TCP: {}", remoteQueuePath);
@@ -370,7 +371,8 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
      * TCP:192.168.1.100\private$\QueueName -> FormatName:DIRECT=TCP:192.168.1.100\private$\QueueName
      * 192.168.1.100\private$\QueueName -> FormatName:DIRECT=OS:192.168.1.100\private$\QueueName
      */
-    private String convertToTcpPath(String queuePath) {
+    @Override
+    public String convertToTcpPath(String queuePath) {
         if (queuePath == null || queuePath.trim().isEmpty()) {
             throw new IllegalArgumentException("Queue path cannot be null or empty");
         }
@@ -411,6 +413,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
      * @param messageBody The message content to send
      * @return true if message sent successfully, false otherwise
      */
+    @Override
     public boolean sendMessageToRemote(String remoteMachine, String queueName, String messageBody) {
         String tcpQueuePath = "TCP:" + remoteMachine + "\\private$\\" + queueName;
         return sendMessageToRemote(tcpQueuePath, messageBody);
@@ -423,6 +426,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
      * @param message The MsmqMessage object to send
      * @return true if message sent successfully, false otherwise
      */
+    @Override
     public boolean sendMessageToRemote(String remoteQueuePath, MsmqMessage message) {
         return sendMessageToRemote(remoteQueuePath, message.getBody());
     }
@@ -435,6 +439,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
      * @param message The MsmqMessage object to send
      * @return true if message sent successfully, false otherwise
      */
+    @Override
     public boolean sendMessageToRemote(String remoteMachine, String queueName, MsmqMessage message) {
         String tcpQueuePath = "TCP:" + remoteMachine + "\\private$\\" + queueName;
         return sendMessageToRemote(tcpQueuePath, message.getBody());
