@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "Request for securities settlement operation", requiredProperties = {"isinCode", "securityName", "quantity", "sellerAccountId", "buyerAccountId", "sellerName", "buyerName", "tradeDate", "settlementDate", "queueName", "commonReferenceId", "priority"})
+@Schema(description = "Request for securities settlement operation", requiredProperties = {"isinCode", "securityName", "quantity", "sellerAccountId", "buyerAccountId", "sellerName", "buyerName", "tradeDate", "settlementDate", "queueName", "commonReferenceId", "priority","sellerCustodianBic","buyerCustodianBic", "sellerBrokerBic","buyerBrokerBic"})
 public class SecuritiesSettlementRequest {
 
     @Schema(
@@ -115,10 +115,12 @@ public class SecuritiesSettlementRequest {
     @JsonProperty("seller_broker_bic")
     private String sellerBrokerBic;
 
-    public String getBuyerBrokerBic() {
-        return this.buyerBrokerBic;
-    }
-    public String getSellerBrokerBic() {
-        return this.sellerBrokerBic;
-    }
+    @JsonProperty("seller_custodian_bic")
+    @Schema(description = "BIC of the seller's custodian", example = "SELLERCUSTXXX")
+    private String sellerCustodianBic;
+
+    @JsonProperty("buyer_custodian_bic")
+    @Schema(description = "BIC of the buyer's custodian", example = "BUYERCUSTXXX")
+    private String buyerCustodianBic;
+
 }

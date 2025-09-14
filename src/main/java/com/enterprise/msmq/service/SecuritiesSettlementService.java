@@ -210,7 +210,7 @@ public class SecuritiesSettlementService {
         // Trade details
         parameters.put("MARKET_IDENTIFIER", "SAFM");
         parameters.put("MARKET_TYPE", "OTCO");
-        parameters.put("TRADE_DATE_TIME", request.getTradeDate() + "T15:59:37");
+        parameters.put("TRADE_DATE_TIME", request.getTradeDate());
         parameters.put("SETTLEMENT_DATE", request.getSettlementDate());
         parameters.put("TRADE_TRANSACTION_CONDITION", "MAPR");
         parameters.put("TRADE_ORIGINATOR_ROLE", "MNOn");
@@ -227,33 +227,35 @@ public class SecuritiesSettlementService {
         parameters.put("ACCOUNT_OWNER_ID", request.getSellerAccountId());
         parameters.put("ACCOUNT_OWNER_ISSUER", "CSD");
         parameters.put("ACCOUNT_OWNER_SCHEME", "SOR ACCOUNT");
-        parameters.put("SAFEEPING_ACCOUNT_ID", request.getSellerBrokerBic()+"/C");
+        parameters.put("SAFEEPING_ACCOUNT_ID", request.getSellerBrokerBic());
         parameters.put("SAFEEPING_PLACE_TYPE", "CUST");
         parameters.put("SAFEEPING_PLACE_ID", "DSTXTZTZXXX");
         parameters.put("SECURITIES_TRANSACTION_TYPE", "TRAD");
         parameters.put("SETTLEMENT_SYSTEM_METHOD", "NSET");
-        
+
+        // Processing ID
+        parameters.put("PROCESSING_ID", receTxId);
+
         // Party details (Delivering and Receiving)
         parameters.put("DEPOSITORY_BIC", "DSTXTZTZ");
-        parameters.put("DELIVERING_PARTY1_ID", request.getBuyerBrokerBic()+"B02/B");
+        parameters.put("DELIVERING_PARTY1_ID", request.getSellerBrokerBic());
         parameters.put("DELIVERING_PARTY1_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY1_SCHEME", "TRADING PARTY");
-        parameters.put("PROCESSING_ID", receTxId);
         parameters.put("DELIVERING_PARTY2_ID", request.getSellerAccountId());
         parameters.put("DELIVERING_PARTY2_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY2_SCHEME", "SOR ACCOUNT");
-        parameters.put("DELIVERING_PARTY3_ID", request.getBuyerBrokerBic()+"/C");
+        parameters.put("DELIVERING_PARTY3_ID", request.getSellerCustodianBic());
         parameters.put("DELIVERING_PARTY3_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY3_SCHEME", "MB SCA");
         
         parameters.put("RECEIVING_DEPOSITORY_BIC", "SAFMXXXX");
-        parameters.put("RECEIVING_PARTY1_ID", request.getSellerBrokerBic()+"/B");
+        parameters.put("RECEIVING_PARTY1_ID", request.getBuyerBrokerBic());
         parameters.put("RECEIVING_PARTY1_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY1_SCHEME", "TRADING PARTY");
-        parameters.put("RECEIVING_PARTY2_ID", request.getSellerAccountId());
+        parameters.put("RECEIVING_PARTY2_ID", request.getBuyerAccountId());
         parameters.put("RECEIVING_PARTY2_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY2_SCHEME", "SOR ACCOUNT");
-        parameters.put("RECEIVING_PARTY3_ID", request.getSellerBrokerBic()+"/C");
+        parameters.put("RECEIVING_PARTY3_ID", request.getBuyerCustodianBic());
         parameters.put("RECEIVING_PARTY3_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY3_SCHEME", "MB SCA");
         
@@ -315,33 +317,33 @@ public class SecuritiesSettlementService {
         parameters.put("ACCOUNT_OWNER_ID", request.getBuyerAccountId());
         parameters.put("ACCOUNT_OWNER_ISSUER", "CSD");
         parameters.put("ACCOUNT_OWNER_SCHEME", "SOR ACCOUNT");
-        parameters.put("SAFEEPING_ACCOUNT_ID", request.getBuyerBrokerBic()+"/C");
+        parameters.put("SAFEEPING_ACCOUNT_ID", request.getBuyerBrokerBic());
         parameters.put("SAFEEPING_PLACE_TYPE", "CUST");
-        parameters.put("SAFEEPING_PLACE_ID", "DSTXTZTZXXX");
+        parameters.put("SAFEEPING_PLACE_ID", "DSTXTZTZ");
         parameters.put("SECURITIES_TRANSACTION_TYPE", "TRAD");
         parameters.put("SETTLEMENT_SYSTEM_METHOD", "NSET");
         
         // Party details (Delivering and Receiving)
         parameters.put("DEPOSITORY_BIC", "DSTXTZTZ");
-        parameters.put("DELIVERING_PARTY1_ID", request.getBuyerBrokerBic()+"/B");
+        parameters.put("DELIVERING_PARTY1_ID", request.getBuyerBrokerBic());
         parameters.put("DELIVERING_PARTY1_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY1_SCHEME", "TRADING PARTY");
         parameters.put("PROCESSING_ID", deliTxId);
         parameters.put("DELIVERING_PARTY2_ID", request.getBuyerAccountId());
         parameters.put("DELIVERING_PARTY2_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY2_SCHEME", "SOR ACCOUNT");
-        parameters.put("DELIVERING_PARTY3_ID", request.getBuyerBrokerBic()+"/C");
+        parameters.put("DELIVERING_PARTY3_ID", request.getBuyerCustodianBic());
         parameters.put("DELIVERING_PARTY3_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY3_SCHEME", "MB SCA");
         
-        parameters.put("RECEIVING_DEPOSITORY_BIC", "SAFMXXXX");
-        parameters.put("RECEIVING_PARTY1_ID", request.getSellerBrokerBic()+"/B");
+        parameters.put("RECEIVING_DEPOSITORY_BIC", "SAFM");
+        parameters.put("RECEIVING_PARTY1_ID", request.getSellerBrokerBic());
         parameters.put("RECEIVING_PARTY1_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY1_SCHEME", "TRADING PARTY");
-        parameters.put("RECEIVING_PARTY2_ID", request.getBuyerAccountId());
+        parameters.put("RECEIVING_PARTY2_ID", request.getSellerAccountId());
         parameters.put("RECEIVING_PARTY2_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY2_SCHEME", "SOR ACCOUNT");
-        parameters.put("RECEIVING_PARTY3_ID", request.getSellerBrokerBic()+"/C");
+        parameters.put("RECEIVING_PARTY3_ID", request.getSellerCustodianBic());
         parameters.put("RECEIVING_PARTY3_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY3_SCHEME", "MB SCA");
         
