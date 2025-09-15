@@ -16,7 +16,16 @@ import java.util.UUID;
 /**
  * Service for handling securities settlement operations using MSMQ templates.
  * Generates paired RECE and DELI messages for securities transfers.
- * 
+ * <p>
+ * This service:
+ * <ul>
+ *   <li>Generates unique transaction IDs and a common reference ID for each settlement.</li>
+ *   <li>Sends both RECE (credit seller) and DELI (debit buyer) messages using the MSMQ template service.</li>
+ *   <li>Includes buyer_broker_bic and seller_broker_bic in both request and response.</li>
+ *   <li>Ensures the common reference ID is in the format 616964F32 (digit + 8 alphanumerics) and is unique.</li>
+ *   <li>Returns a detailed response with transaction IDs, status, and error messages if any.</li>
+ * </ul>
+ *
  * @author Enterprise Development Team
  * @version 1.0.0
  * @since 2025-08-30
@@ -37,11 +46,11 @@ public class SecuritiesSettlementService {
 
     /**
      * Sends paired RECE and DELI messages for securities settlement.
-     * 
-     * @param settlementRequest the settlement request containing investor and security details
-     * @return SecuritiesSettlementResponse with transaction IDs and status information
+     *
+     * @param settlementRequest the settlement request containing investor, security, and broker details
+     * @return SecuritiesSettlementResponse with transaction IDs, status, and broker BICs
      */
-    public SecuritiesSettlementResponse sendPairedSettlement(SecuritiesSettlementRequest settlementRequest) {
+    public SecuritiesSettlementResponse sendPairedSettlement(SecuritiesSettlementRequest settlementRequest, String environment) {
         try {
             logger.info("Starting paired settlement for security: {} with quantity: {}",
                        settlementRequest.getIsinCode(), settlementRequest.getQuantity());
@@ -53,16 +62,14 @@ public class SecuritiesSettlementService {
 
             // Generate or use provided common reference ID
             String commonReferenceId = generateCommonReferenceId();
-            // Generate correlation ID
-            String correlationId = generateCorrelationId();
 
             // Send RECE message (credits seller)
             boolean receSent = sendReceMessage(settlementRequest, 
-                                            receTransactionId, deliTransactionId, correlationId, commonReferenceId);
+                                            receTransactionId, deliTransactionId, commonReferenceId,environment);
 
             // Send DELI message (debits buyer)
             boolean deliSent = sendDeliMessage(settlementRequest, 
-                                             deliTransactionId, receTransactionId, correlationId, commonReferenceId);
+                                             deliTransactionId, receTransactionId, commonReferenceId,environment);
 
             // Build response
             SecuritiesSettlementResponse response = SecuritiesSettlementResponse.builder()
@@ -70,7 +77,6 @@ public class SecuritiesSettlementService {
                 .baseTransactionId(baseTransactionId)
                 .receTransactionId(receTransactionId)
                 .deliTransactionId(deliTransactionId)
-                .correlationId(correlationId)
                 .commonReferenceId(commonReferenceId)
                 .queueName(settlementRequest.getQueueName())
                 .isinCode(settlementRequest.getIsinCode())
@@ -112,17 +118,18 @@ public class SecuritiesSettlementService {
      * Sends RECE message (credits seller's account).
      */
     private boolean sendReceMessage(SecuritiesSettlementRequest request, 
-                                  String receTxId, String deliTxId, String correlationId, String commonReferenceId) {
+                                  String receTxId, String deliTxId, String commonReferenceId, String environment) {
         try {
-            Map<String, String> parameters = buildReceParameters(request, receTxId, deliTxId, correlationId, commonReferenceId);
+            Map<String, String> parameters = buildReceParameters(request, receTxId, deliTxId, commonReferenceId);
 
             // Use existing template service to send message
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SECURITIES_SETTLEMENT", 
                 request.getQueueName(), 
-                parameters, 
+                parameters,
+                environment,
                 1,
-                correlationId
+                null
             );
 
             if (success) {
@@ -143,17 +150,18 @@ public class SecuritiesSettlementService {
      * Sends DELI message (debits buyer's account).
      */
     private boolean sendDeliMessage(SecuritiesSettlementRequest request, 
-                                  String deliTxId, String receTxId, String correlationId, String commonReferenceId) {
+                                  String deliTxId, String receTxId, String commonReferenceId, String environment) {
         try {
-            Map<String, String> parameters = buildDeliParameters(request, deliTxId, receTxId, correlationId, commonReferenceId);
+            Map<String, String> parameters = buildDeliParameters(request, deliTxId, receTxId, commonReferenceId);
 
             // Use existing template service to send message
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SECURITIES_SETTLEMENT", 
                 request.getQueueName(), 
-                parameters, 
+                parameters,
+                environment,
                 1,
-                correlationId
+                null
             );
 
             if (success) {
@@ -172,9 +180,15 @@ public class SecuritiesSettlementService {
 
     /**
      * Builds parameters for RECE message (credits seller).
+     *
+     * @param request the settlement request
+     * @param receTxId transaction ID for RECE message
+     * @param deliTxId linked DELI transaction ID
+     * @param commonReferenceId unique common reference ID (format: digit + 8 alphanumerics)
+     * @return map of parameters for the RECE message template
      */
     private Map<String, String> buildReceParameters(SecuritiesSettlementRequest request, 
-                                                   String receTxId, String deliTxId, String correlationId, String commonReferenceId) {
+                                                   String receTxId, String deliTxId, String commonReferenceId) {
         Map<String, String> parameters = new HashMap<>();
         
         // Basic SWIFT header parameters (based on your rece.xml)
@@ -196,7 +210,7 @@ public class SecuritiesSettlementService {
         // Trade details
         parameters.put("MARKET_IDENTIFIER", "SAFM");
         parameters.put("MARKET_TYPE", "OTCO");
-        parameters.put("TRADE_DATE_TIME", request.getTradeDate() + "T15:59:37");
+        parameters.put("TRADE_DATE_TIME", request.getTradeDate());
         parameters.put("SETTLEMENT_DATE", request.getSettlementDate());
         parameters.put("TRADE_TRANSACTION_CONDITION", "MAPR");
         parameters.put("TRADE_ORIGINATOR_ROLE", "MNOn");
@@ -213,33 +227,35 @@ public class SecuritiesSettlementService {
         parameters.put("ACCOUNT_OWNER_ID", request.getSellerAccountId());
         parameters.put("ACCOUNT_OWNER_ISSUER", "CSD");
         parameters.put("ACCOUNT_OWNER_SCHEME", "SOR ACCOUNT");
-        parameters.put("SAFEEPING_ACCOUNT_ID", request.getSellerBrokerBic()+"/C");
+        parameters.put("SAFEEPING_ACCOUNT_ID", request.getSellerCustodianBic());
         parameters.put("SAFEEPING_PLACE_TYPE", "CUST");
         parameters.put("SAFEEPING_PLACE_ID", "DSTXTZTZXXX");
         parameters.put("SECURITIES_TRANSACTION_TYPE", "TRAD");
         parameters.put("SETTLEMENT_SYSTEM_METHOD", "NSET");
-        
+
+        // Processing ID
+        parameters.put("PROCESSING_ID", receTxId);
+
         // Party details (Delivering and Receiving)
         parameters.put("DEPOSITORY_BIC", "DSTXTZTZ");
-        parameters.put("DELIVERING_PARTY1_ID", request.getBuyerBrokerBic()+"B02/B");
+        parameters.put("DELIVERING_PARTY1_ID", request.getSellerBrokerBic());
         parameters.put("DELIVERING_PARTY1_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY1_SCHEME", "TRADING PARTY");
-        parameters.put("PROCESSING_ID", receTxId);
         parameters.put("DELIVERING_PARTY2_ID", request.getSellerAccountId());
         parameters.put("DELIVERING_PARTY2_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY2_SCHEME", "SOR ACCOUNT");
-        parameters.put("DELIVERING_PARTY3_ID", request.getBuyerBrokerBic()+"/C");
+        parameters.put("DELIVERING_PARTY3_ID", request.getSellerCustodianBic());
         parameters.put("DELIVERING_PARTY3_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY3_SCHEME", "MB SCA");
         
         parameters.put("RECEIVING_DEPOSITORY_BIC", "SAFMXXXX");
-        parameters.put("RECEIVING_PARTY1_ID", request.getSellerBrokerBic()+"/B");
+        parameters.put("RECEIVING_PARTY1_ID", request.getBuyerBrokerBic());
         parameters.put("RECEIVING_PARTY1_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY1_SCHEME", "TRADING PARTY");
-        parameters.put("RECEIVING_PARTY2_ID", request.getSellerAccountId());
+        parameters.put("RECEIVING_PARTY2_ID", request.getBuyerAccountId());
         parameters.put("RECEIVING_PARTY2_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY2_SCHEME", "SOR ACCOUNT");
-        parameters.put("RECEIVING_PARTY3_ID", request.getSellerBrokerBic()+"/C");
+        parameters.put("RECEIVING_PARTY3_ID", request.getBuyerCustodianBic());
         parameters.put("RECEIVING_PARTY3_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY3_SCHEME", "MB SCA");
         
@@ -254,9 +270,15 @@ public class SecuritiesSettlementService {
 
     /**
      * Builds parameters for DELI message (debits buyer).
+     *
+     * @param request the settlement request
+     * @param deliTxId transaction ID for DELI message
+     * @param receTxId linked RECE transaction ID
+     * @param commonReferenceId unique common reference ID (format: digit + 8 alphanumerics)
+     * @return map of parameters for the DELI message template
      */
     private Map<String, String> buildDeliParameters(SecuritiesSettlementRequest request, 
-                                                   String deliTxId, String receTxId, String correlationId, String commonReferenceId) {
+                                                   String deliTxId, String receTxId, String commonReferenceId) {
         Map<String, String> parameters = new HashMap<>();
         
         // Basic SWIFT header parameters (based on your deli.xml)
@@ -295,7 +317,7 @@ public class SecuritiesSettlementService {
         parameters.put("ACCOUNT_OWNER_ID", request.getBuyerAccountId());
         parameters.put("ACCOUNT_OWNER_ISSUER", "CSD");
         parameters.put("ACCOUNT_OWNER_SCHEME", "SOR ACCOUNT");
-        parameters.put("SAFEEPING_ACCOUNT_ID", request.getBuyerBrokerBic()+"/C");
+        parameters.put("SAFEEPING_ACCOUNT_ID", request.getBuyerCustodianBic());
         parameters.put("SAFEEPING_PLACE_TYPE", "CUST");
         parameters.put("SAFEEPING_PLACE_ID", "DSTXTZTZXXX");
         parameters.put("SECURITIES_TRANSACTION_TYPE", "TRAD");
@@ -303,25 +325,25 @@ public class SecuritiesSettlementService {
         
         // Party details (Delivering and Receiving)
         parameters.put("DEPOSITORY_BIC", "DSTXTZTZ");
-        parameters.put("DELIVERING_PARTY1_ID", request.getBuyerBrokerBic()+"/B");
+        parameters.put("DELIVERING_PARTY1_ID", request.getBuyerBrokerBic());
         parameters.put("DELIVERING_PARTY1_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY1_SCHEME", "TRADING PARTY");
         parameters.put("PROCESSING_ID", deliTxId);
         parameters.put("DELIVERING_PARTY2_ID", request.getBuyerAccountId());
         parameters.put("DELIVERING_PARTY2_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY2_SCHEME", "SOR ACCOUNT");
-        parameters.put("DELIVERING_PARTY3_ID", request.getBuyerBrokerBic()+"/C");
+        parameters.put("DELIVERING_PARTY3_ID", request.getBuyerCustodianBic());
         parameters.put("DELIVERING_PARTY3_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY3_SCHEME", "MB SCA");
         
         parameters.put("RECEIVING_DEPOSITORY_BIC", "SAFMXXXX");
-        parameters.put("RECEIVING_PARTY1_ID", request.getSellerBrokerBic()+"/B");
+        parameters.put("RECEIVING_PARTY1_ID", request.getSellerBrokerBic());
         parameters.put("RECEIVING_PARTY1_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY1_SCHEME", "TRADING PARTY");
-        parameters.put("RECEIVING_PARTY2_ID", request.getBuyerAccountId());
+        parameters.put("RECEIVING_PARTY2_ID", request.getSellerAccountId());
         parameters.put("RECEIVING_PARTY2_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY2_SCHEME", "SOR ACCOUNT");
-        parameters.put("RECEIVING_PARTY3_ID", request.getSellerBrokerBic()+"/C");
+        parameters.put("RECEIVING_PARTY3_ID", request.getSellerCustodianBic());
         parameters.put("RECEIVING_PARTY3_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY3_SCHEME", "MB SCA");
         
@@ -336,6 +358,8 @@ public class SecuritiesSettlementService {
 
     /**
      * Generates a unique base transaction ID.
+     * Format: YYMMDD + 6 random uppercase alphanumeric characters.
+     * @return base transaction ID string
      */
     private String generateBaseTransactionId() {
         // Generate format: YYMMDD + random 6 chars
@@ -345,15 +369,9 @@ public class SecuritiesSettlementService {
     }
 
     /**
-     * Generates a correlation ID if none provided.
-     */
-    private String generateCorrelationId() {
-        return "CORR-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    /**
      * Generates a unique 9-character common reference ID (e.g., 616964F32).
      * The first character is a digit, followed by 8 alphanumeric characters.
+     * @return unique common reference ID
      */
     private String generateCommonReferenceId() {
         StringBuilder sb = new StringBuilder(9);

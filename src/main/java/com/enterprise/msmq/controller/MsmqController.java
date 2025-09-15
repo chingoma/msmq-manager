@@ -11,17 +11,26 @@ import com.enterprise.msmq.enums.ResponseCode;
 import com.enterprise.msmq.exception.MsmqException;
 import com.enterprise.msmq.service.contracts.IMsmqService;
 import com.enterprise.msmq.service.MsmqService;
+import com.enterprise.msmq.service.MsmqMessageTemplateService;
 import com.enterprise.msmq.util.RequestIdGenerator;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -155,6 +164,145 @@ public class MsmqController {
                 .build();
     }
 
+    // XML Processing Helper Methods
+    
+    /**
+     * Processes XML content based on request options (validation and formatting).
+     * 
+     * @param body the message body (potentially XML)
+     * @param request the send message request with XML processing options
+     * @return processed message body
+     * @throws MsmqException if XML processing fails
+     */
+    private String processXmlContent(String body, SendMessageRequest request) throws MsmqException {
+        // Skip processing if no XML options are enabled or content doesn't appear to be XML
+        if (!Boolean.TRUE.equals(request.getValidateXml()) && !Boolean.TRUE.equals(request.getFormatXml())) {
+            return body;
+        }
+        
+        // Auto-detect XML content if contentType is not specified
+        boolean isXmlContent = isXmlContent(body, request.getContentType());
+        if (!isXmlContent) {
+            logger.debug("Content does not appear to be XML, skipping XML processing");
+            return body;
+        }
+        
+        // Clean and normalize XML content
+        String processedBody = cleanXmlContent(body);
+        
+        try {
+            // Validate XML if requested
+            if (Boolean.TRUE.equals(request.getValidateXml())) {
+                validateXmlStructure(processedBody);
+                logger.debug("XML validation completed successfully");
+            }
+            
+            // Format XML if requested
+            if (Boolean.TRUE.equals(request.getFormatXml())) {
+                processedBody = MsmqMessageTemplateService.prettyFormatXml(processedBody);
+                logger.debug("XML formatting completed successfully");
+            }
+            
+            return processedBody;
+            
+        } catch (Exception e) {
+            logger.error("XML processing failed: {}", e.getMessage());
+            throw new MsmqException(ResponseCode.INVALID_MESSAGE_FORMAT, 
+                "XML processing failed: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Cleans XML content by removing BOM, fixing encoding issues, and normalizing.
+     */
+    private String cleanXmlContent(String xml) {
+        if (xml == null || xml.isEmpty()) {
+            return xml;
+        }
+        
+        String cleaned = xml;
+        
+        // Remove BOM (Byte Order Mark) if present
+        if (cleaned.startsWith("\uFEFF")) {
+            cleaned = cleaned.substring(1);
+            logger.debug("Removed BOM from XML content");
+        }
+        
+        // Remove any leading whitespace or invisible characters
+        cleaned = cleaned.trim();
+        
+        // Fix common encoding issues in XML declaration
+        cleaned = cleaned.replaceAll("^\\s*<\\?xml\\s+version\\s*=\\s*[\"']1\\.0[\"']\\s+encoding\\s*=\\s*[\"']utf-16[\"']", 
+                                   "<?xml version=\"1.0\" encoding=\"UTF-8\"");
+        
+        // Ensure proper UTF-8 encoding declaration
+        if (cleaned.startsWith("<?xml") && !cleaned.contains("encoding=\"UTF-8\"")) {
+            cleaned = cleaned.replaceFirst("(<?xml[^>]*?)(\\s*>)", "$1 encoding=\"UTF-8\"$2");
+        }
+        
+        // Remove any remaining invisible characters before XML declaration
+        cleaned = cleaned.replaceAll("^[\\u0000-\\u001F\\u007F-\\u009F]+", "");
+        
+        logger.debug("XML content cleaned and normalized");
+        return cleaned;
+    }
+    
+    /**
+     * Determines if the content is XML based on content type hint or content analysis.
+     */
+    private boolean isXmlContent(String content, String contentType) {
+        // Check explicit content type hint
+        if (contentType != null) {
+            return contentType.toLowerCase().contains("xml");
+        }
+        
+        // Auto-detect XML by looking for XML declaration or root element
+        String trimmed = content.trim();
+        
+        // Remove BOM if present for detection
+        if (trimmed.startsWith("\uFEFF")) {
+            trimmed = trimmed.substring(1).trim();
+        }
+        
+        // Check for XML declaration or root element
+        return trimmed.startsWith("<?xml") || 
+               (trimmed.startsWith("<") && !trimmed.startsWith("<!"));
+    }
+    
+    /**
+     * Validates XML structure and well-formedness.
+     */
+    private void validateXmlStructure(String xml) throws Exception {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            factory.setValidating(false);
+            
+            // Security settings to prevent XXE attacks
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            
+            // Additional security features
+            factory.setXIncludeAware(false);
+            factory.setExpandEntityReferences(false);
+            
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            
+            // Parse with UTF-8 encoding explicitly
+            Document document = builder.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+            
+            // If we reach here, XML is well-formed
+            logger.debug("XML validation successful - document has {} elements", 
+                        document.getElementsByTagName("*").getLength());
+                        
+        } catch (Exception e) {
+            logger.error("XML validation failed: {}", e.getMessage());
+            throw new Exception("XML validation failed: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Maps SendMessageRequest to legacy MsmqMessage format.
      * TODO: Remove this method once service layer is updated
@@ -163,10 +311,10 @@ public class MsmqController {
         MsmqMessage message = new MsmqMessage();
         message.setBody(request.getBody());
         message.setLabel(request.getLabel());
-        message.setPriority(request.getPriority());
+        message.setPriority(request.getPriority() != null ? request.getPriority() : 3);
         message.setCorrelationId(request.getCorrelationId());
         message.setMessageType(request.getMessageType());
-        message.setDestinationQueue(request.getDestinationQueue());
+        message.setDestinationQueue(null); // Will be set by service using queueName parameter
         message.setSourceQueue(request.getSourceQueue());
         message.setProperties(request.getProperties());
         return message;
@@ -177,6 +325,14 @@ public class MsmqController {
      * TODO: Remove this method once service layer is updated
      */
     private MessageResponse mapToMessageResponse(MsmqMessage message) {
+        return mapToMessageResponse(message, null);
+    }
+
+    /**
+     * Maps legacy MsmqMessage to MessageResponse format with explicit destination queue.
+     * TODO: Remove this method once service layer is updated
+     */
+    private MessageResponse mapToMessageResponse(MsmqMessage message, String destinationQueue) {
         return MessageResponse.builder()
                 .messageId(message.getMessageId())
                 .body(message.getBody())
@@ -188,7 +344,7 @@ public class MsmqController {
                 .sentTime(message.getSentTime())
                 .receivedTime(message.getReceivedTime())
                 .sourceQueue(message.getSourceQueue())
-                .destinationQueue(message.getDestinationQueue())
+                .destinationQueue(destinationQueue != null ? destinationQueue : message.getDestinationQueue())
                 .size(message.getSize())
                 .deliveryCount(message.getDeliveryCount())
                 .state(message.getStatus()) // Using status instead of state
@@ -323,28 +479,62 @@ public class MsmqController {
 
     /**
      * Sends a message to a specific queue.
+     * Supports both regular messages and XML content with optional validation and formatting.
      * 
      * @param queueName the destination queue name
-     * @param request the message request
+     * @param request the message request (supports XML processing options)
      * @return the sent message response
      */
     @PostMapping("/queues/{queueName}/messages")
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Send Message to Queue",
+        description = "Sends a message to the specified MSMQ queue. " +
+                    "Supports XML content with optional validation and formatting. " +
+                    "XML processing is enabled by setting validateXml or formatXml flags to true. " +
+                    "Use environment parameter to specify 'local' or 'remote' target."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Message sent successfully",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = MessageResponse.class)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "Invalid request or XML validation failed",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ApiResponse.class)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "Queue not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Internal server error"
+        )
+    })
     public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(
             @PathVariable @NotBlank String queueName,
-            @Valid @RequestBody SendMessageRequest request) {
+            @Valid @RequestBody SendMessageRequest request,
+            @RequestParam(required = false, defaultValue = "local") String environment) {
         long startTime = System.currentTimeMillis();
         String requestId = RequestIdGenerator.generateRequestId();
         
         try {
             logger.info("Sending message to queue: {} with request ID: {}", queueName, requestId);
             
+            // Skip XML processing in controller - let the queue manager handle it
             // TODO: Update service to accept SendMessageRequest and return MessageResponse
             // For now, we'll need to map the request to the legacy format
             MsmqMessage message = mapToLegacyMessage(request);
-            MsmqMessage sentMessage = IMsmqService.sendMessage(queueName, message);
+            MsmqMessage sentMessage = IMsmqService.sendMessage(queueName, message, environment);
             
             // TODO: Map the legacy response to MessageResponse
-            MessageResponse messageResponse = mapToMessageResponse(sentMessage);
+            MessageResponse messageResponse = mapToMessageResponse(sentMessage, queueName);
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
             ApiResponse<MessageResponse> response = ApiResponse.success("Message sent successfully", messageResponse);
@@ -364,6 +554,87 @@ public class MsmqController {
             ApiResponse<MessageResponse> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Internal server error");
             response.setRequestId(requestId);
             return ResponseEntity.ok(response);
+        }
+    }
+
+    /**
+     * Sends a message to a remote MSMQ queue.
+     * This endpoint uses direct remote queue sending without templates.
+     * 
+     * @param queueName the destination queue name
+     * @param request the message request
+     * @return the sent message response
+     */
+    @PostMapping("/queues/{queueName}/messages/remote")
+    @io.swagger.v3.oas.annotations.Operation(
+        summary = "Send Message to Remote Queue",
+        description = "Sends a message to a remote MSMQ queue using direct remote sending. " +
+                    "This endpoint is specifically designed for remote machine communication. " +
+                    "Supports XML content with optional validation and formatting."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Message sent successfully to remote queue",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = MessageResponse.class)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "Invalid request or XML validation failed",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ApiResponse.class)
+            )
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Internal server error"
+        )
+    })
+    public ResponseEntity<ApiResponse<MessageResponse>> sendMessageToRemote(
+            @PathVariable @NotBlank String queueName,
+            @Valid @RequestBody SendMessageRequest request) {
+        
+        long startTime = System.currentTimeMillis();
+        String requestId = RequestIdGenerator.generateRequestId();
+        
+        try {
+            logger.info("Sending message to remote queue: {} with request ID: {}", queueName, requestId);
+            
+            // Skip XML processing in controller - let the queue manager handle it
+            // Create message for remote sending
+            MsmqMessage message = new MsmqMessage();
+            message.setBody(request.getBody());
+            message.setLabel(request.getLabel());
+            message.setPriority(request.getPriority() != null ? request.getPriority() : 3);
+            message.setCorrelationId(request.getCorrelationId());
+            message.setMessageType(request.getMessageType());
+            message.setDestinationQueue(queueName);
+            message.setSourceQueue(request.getSourceQueue());
+            message.setProperties(request.getProperties());
+            
+            // Use the new sendMessage method with environment support
+            MsmqMessage sentMessage = IMsmqService.sendMessage(queueName, message, "remote");
+            
+            // Map to response
+            MessageResponse messageResponse = mapToMessageResponse(sentMessage, queueName);
+            
+            ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
+            ApiResponse<MessageResponse> response = ApiResponse.success("Message sent successfully to remote queue", messageResponse);
+            response.setRequestId(requestId);
+            response.setMetadata(metadata);
+            
+            logger.info("✅ Message sent successfully to remote queue: {} with request ID: {}", queueName, requestId);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("❌ Error sending message to remote queue: {} with request ID: {}", queueName, requestId, e);
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(
+                ResponseCode.SYSTEM_ERROR,
+                "Internal error sending message to remote queue: " + e.getMessage()
+            ));
         }
     }
 

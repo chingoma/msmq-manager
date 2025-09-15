@@ -72,7 +72,7 @@ public class SecuritiesSettlementController {
             @Valid @RequestBody SecuritiesSettlementRequest request) {
         
         try {
-            SecuritiesSettlementResponse response = settlementService.sendPairedSettlement(request);
+            SecuritiesSettlementResponse response = settlementService.sendPairedSettlement(request,"remote");
 
             if (response.isSuccess()) {
                 log.info("✅ Securities settlement completed successfully. RECE: {}, DELI: {}", 

@@ -11,9 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
-import com.sun.jna.Memory;
 import com.sun.jna.Structure;
-import com.sun.jna.WString;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -24,7 +22,7 @@ import java.util.UUID;
 
 /**
  * Native MSMQ Queue Manager using JNA.
- * 
+ * <p>
  * This implementation uses the native MSMQ API through JNA
  * for high-performance queue operations. It implements the 
  * IMsmqQueueManager interface to provide consistent queue management.
@@ -631,7 +629,7 @@ public class NativeMsmqQueueManager implements IMsmqQueueManager {
             );
             
             if (result != MsmqNativeInterface.MQ_OK) {
-                log.error("Failed to open queue for peeking: {}, error code: 0x{}", 
+                log.error("Failed to open queue for peeking: {}, error code: 0x{}",
                     queuePath, Integer.toHexString(result));
                 return Optional.empty();
             }
@@ -679,74 +677,124 @@ public class NativeMsmqQueueManager implements IMsmqQueueManager {
     }
     
     /**
+     * Sends a raw message body to a remote MSMQ queue using DIRECT format name.
+     */
+    @Override
+    public boolean sendMessageToRemote(String remoteQueuePath, String messageBody) {
+        try {
+            log.info("Sending message to remote queue via Native MSMQ API: {}", remoteQueuePath);
+
+            // Use the same sendMessage logic but with remote queue path
+            return sendMessage(remoteQueuePath, messageBody);
+
+        } catch (Exception e) {
+            log.error("Error sending message to remote queue {} via Native MSMQ: {}",
+                remoteQueuePath, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Sends a MsmqMessage object to a remote MSMQ queue using DIRECT format name.
+     */
+    @Override
+    public boolean sendMessageToRemote(String remoteQueuePath, MsmqMessage message) {
+        return sendMessageToRemote(remoteQueuePath, message.getBody());
+    }
+
+    @Override
+    public String convertToTcpPath(String queuePath) {
+        if (queuePath == null || queuePath.trim().isEmpty()) {
+            throw new IllegalArgumentException("Queue path cannot be null or empty");
+        }
+
+        // If already FormatName format, return as is
+        if (queuePath.toUpperCase().startsWith("FORMATNAME:")) {
+            return queuePath;
+        }
+
+        // If it's TCP: format, convert to FormatName:DIRECT=TCP:
+        if (queuePath.toUpperCase().startsWith("TCP:")) {
+            String pathWithoutTcp = queuePath.substring(4); // Remove "TCP:"
+            return "FormatName:DIRECT=TCP:" + pathWithoutTcp;
+        }
+
+        // Convert UNC path (\\server\private$\queue) to FormatName OS format
+        if (queuePath.startsWith("\\\\")) {
+            String pathWithoutUNC = queuePath.substring(2); // Remove "\\"
+            return "FormatName:DIRECT=OS:" + pathWithoutUNC;
+        }
+
+        // If it's just server\private$\queue format, use OS (native) protocol by default
+        if (queuePath.contains("\\")) {
+            return "FormatName:DIRECT=OS:" + queuePath;
+        }
+
+        // Default case - assume it's a server name and needs path completion
+        throw new IllegalArgumentException("Invalid queue path format: " + queuePath +
+                ". Expected formats: '\\\\server\\private$\\queue', 'TCP:server\\private$\\queue', or 'FormatName:DIRECT=...'");
+    }
+
+    /**
+     * Sends a raw message body to a remote MSMQ queue by constructing a DIRECT format name.
+     */
+    @Override
+    public boolean sendMessageToRemote(String remoteMachine, String queueName, String messageBody) {
+        try {
+            log.info("Sending message to remote queue via Native MSMQ API: {}\\{}", remoteMachine, queueName);
+
+            // Build DIRECT format name for remote queue
+            String directFormatName = buildDirectFormatName(remoteMachine, queueName);
+            log.debug("Using DIRECT format name: {}", directFormatName);
+
+            return sendMessage(directFormatName, messageBody);
+
+        } catch (Exception e) {
+            log.error("Error sending message to remote queue {}\\{} via Native MSMQ: {}",
+                remoteMachine, queueName, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Sends a MsmqMessage object to a remote MSMQ queue by constructing a DIRECT format name.
+     */
+    @Override
+    public boolean sendMessageToRemote(String remoteMachine, String queueName, MsmqMessage message) {
+        return sendMessageToRemote(remoteMachine, queueName, message.getBody());
+    }
+
+    /**
+     * Helper to build a DIRECT format name for remote MSMQ queues.
+     * Uses TCP addressing for remote connections.
+     * Example: DIRECT=TCP:192.168.2.170\private$\queuename
+     */
+    private String buildDirectFormatName(String remoteMachine, String queueName) {
+        // Use TCP protocol for remote connections (more reliable than OS protocol)
+        return String.format("FormatName:DIRECT=TCP:%s\\private$\\%s", remoteMachine, queueName);
+    }
+
+    /**
      * Helper method to construct proper MSMQ format names.
-     * Tries multiple formats including format names and ensures queue exists.
+     * Handles both local queue names and DIRECT format names for remote queues.
+     * Uses the same logic as PowerShell implementation for consistency.
      */
     private String buildMsmqFormatName(String queuePath) {
-        // Try multiple path formats to find one that works
-        String[] possibleFormats = {
-            // Format 1: PowerShell style (working format)
-            ".\\private$\\" + queuePath,
-            
-            // Format 2: UNC network path
-            "\\\\itr00ictl135\\private$\\" + queuePath,
-            
-            // Format 3: Without dot prefix
-            "private$\\" + queuePath,
-            
-            // Format 4: Forward slashes
-            "./private$/" + queuePath,
-            
-            // Format 5: Full UNC with machine name
-            "\\\\itr00ictl135\\private$\\" + queuePath,
-            
-            // Format 6: Local machine format
-            ".\\private$\\" + queuePath,
-            
-            // Format 7: DIRECT format name
-            "DIRECT=OS:itr00ictl135\\private$\\" + queuePath,
-            
-            // Format 8: DIRECT format name with dot
-            "DIRECT=OS:.\\private$\\" + queuePath,
-            
-            // Format 9: TCP format name
-            "DIRECT=TCP:itr00ictl135\\private$\\" + queuePath,
-            
-            // Format 10: Local format name
-            "DIRECT=OS:.\\private$\\" + queuePath
-        };
-        
-        // Try each format until one works
-        for (int i = 0; i < possibleFormats.length; i++) {
-            String formatName = possibleFormats[i];
-            log.debug("Trying format {}: '{}' for queue: '{}'", i + 1, formatName, queuePath);
-            
-            // Test if this format can open the queue
-            if (testQueuePathFormat(formatName)) {
-                log.info("✅ Found working format {}: '{}' for queue: '{}'", i + 1, formatName, queuePath);
-                return formatName;
-            }
-        }
-        
-        // If none work, try to create the queue first, then use PowerShell format
-        log.warn("❌ No working format found, attempting to create queue first");
-        if (createQueueIfNotExists(queuePath)) {
-            String fallbackFormat = ".\\private$\\" + queuePath;
-            log.info("✅ Queue created successfully, using fallback format: '{}'", fallbackFormat);
-            return fallbackFormat;
-        }
-        
-        // Last resort fallback
-        String fallbackFormat = ".\\private$\\" + queuePath;
-        log.error("❌ Failed to create queue, using fallback: '{}'", fallbackFormat);
-        return fallbackFormat;
+        return "FormatName:DIRECT=TCP:" + queuePath;
     }
     
     /**
      * Create the queue if it doesn't exist, using PowerShell as fallback.
+     * Handles both local queue names and DIRECT format names.
      */
     private boolean createQueueIfNotExists(String queuePath) {
         try {
+            // Don't try to create remote queues (DIRECT format names)
+            if (queuePath != null && queuePath.toUpperCase().startsWith("DIRECT=")) {
+                log.debug("Cannot create remote queue locally: {}", queuePath);
+                return false;
+            }
+            
             log.debug("Attempting to create queue if it doesn't exist: {}", queuePath);
             
             // First try native MSMQ creation with different approaches
@@ -874,9 +922,16 @@ public class NativeMsmqQueueManager implements IMsmqQueueManager {
     
     /**
      * Create queue using PowerShell as fallback.
+     * Handles both local queue names and DIRECT format names.
      */
     private boolean createQueueViaPowerShell(String queuePath) {
         try {
+            // Don't try to create remote queues (DIRECT format names)
+            if (queuePath != null && queuePath.toUpperCase().startsWith("DIRECT=")) {
+                log.warn("Cannot create remote queue via PowerShell: {}", queuePath);
+                return false;
+            }
+            
             log.info("Creating queue via PowerShell: {}", queuePath);
             
             // PowerShell command to create queue
@@ -956,6 +1011,7 @@ public class NativeMsmqQueueManager implements IMsmqQueueManager {
     /**
      * Test if a specific queue path format can be opened.
      * This helps us find the correct format for native MSMQ.
+     * Provides detailed error diagnostics for remote queue connectivity.
      */
     private boolean testQueuePathFormat(String formatName) {
         try {
@@ -978,13 +1034,104 @@ public class NativeMsmqQueueManager implements IMsmqQueueManager {
                 log.debug("Format '{}' is valid (queue not found): 0x{}", formatName, Integer.toHexString(result));
                 return true;
             } else {
-                // Format error
-                log.debug("Format '{}' failed: 0x{}", formatName, Integer.toHexString(result));
+                // Format error - provide detailed diagnostics for common MSMQ errors
+                String errorMessage = getMsmqErrorMessage(result);
+                log.debug("Format '{}' failed: 0x{} - {}", formatName, Integer.toHexString(result), errorMessage);
+                
+                // For remote queues (DIRECT format), provide additional connectivity diagnostics
+                if (formatName.toUpperCase().startsWith("DIRECT=TCP:")) {
+                    logRemoteConnectivityDiagnostics(formatName, result);
+                }
+                
                 return false;
             }
         } catch (Exception e) {
             log.debug("Format '{}' threw exception: {}", formatName, e.getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Get human-readable error message for MSMQ error codes.
+     */
+    private String getMsmqErrorMessage(int errorCode) {
+        switch (errorCode) {
+            case MsmqConstants.MQ_ERROR_ILLEGAL_QUEUE_PATHNAME: // 0xc00e001e
+                return "Invalid handle or queue path format";
+            case MsmqConstants.MQ_ERROR_INVALID_PARAMETER: // 0xc00e0006
+                return "Invalid parameter or queue path";
+            case MsmqConstants.MQ_ERROR_QUEUE_NOT_FOUND: // 0xc00e0003
+                return "Queue not found";
+            case MsmqConstants.MQ_ERROR_SHARING_VIOLATION: // 0xc00e0007
+                return "Queue is already open with conflicting access";
+            case MsmqConstants.MQ_ERROR_SERVICE_NOT_AVAILABLE: // 0xc00e0008
+                return "MSMQ service not available";
+            case MsmqConstants.MQ_ERROR_COMPUTER_DOES_NOT_EXIST: // 0xc00e000d
+                return "Remote computer does not exist or is not reachable";
+            case MsmqConstants.MQ_ERROR_NO_DS: // 0xc00e0013
+                return "Directory service not available";
+            case MsmqConstants.MQ_ERROR_ILLEGAL_FORMATNAME: // 0xc00e0026
+                return "Illegal format name";
+            case MsmqConstants.MQ_ERROR_FORMATNAME_BUFFER_TOO_SMALL_2: // 0xc00e002f
+                return "Format name buffer too small";
+            case MsmqConstants.MQ_ERROR_UNSUPPORTED_FORMATNAME_OPERATION_2: // 0xc00e0030
+                return "Unsupported format name operation";
+            case MsmqConstants.MQ_ERROR_REMOTE_MACHINE_NOT_AVAILABLE: // 0xc00e0040
+                return "Remote machine not available";
+            default:
+                return "Unknown MSMQ error";
+        }
+    }
+    
+    /**
+     * Log additional diagnostics for remote queue connectivity issues.
+     */
+    private void logRemoteConnectivityDiagnostics(String formatName, int errorCode) {
+        try {
+            // Extract remote machine from DIRECT=TCP:machine\path format
+            String remoteMachine = extractRemoteMachine(formatName);
+            if (remoteMachine != null) {
+                log.debug("Remote connectivity diagnostics for {}: {}", remoteMachine, getMsmqErrorMessage(errorCode));
+                
+                // Provide specific advice based on error code
+                switch (errorCode) {
+                    case MsmqConstants.MQ_ERROR_ILLEGAL_QUEUE_PATHNAME: // Invalid handle
+                        log.debug("💡 Suggestion: Check if the queue path format is correct for remote access");
+                        break;
+                    case MsmqConstants.MQ_ERROR_COMPUTER_DOES_NOT_EXIST: // Computer does not exist
+                        log.debug("💡 Suggestion: Verify that {} is reachable and MSMQ is installed", remoteMachine);
+                        break;
+                    case MsmqConstants.MQ_ERROR_SERVICE_NOT_AVAILABLE: // Service not available
+                        log.debug("💡 Suggestion: Check if MSMQ service is running on {}", remoteMachine);
+                        break;
+                    case MsmqConstants.MQ_ERROR_REMOTE_MACHINE_NOT_AVAILABLE: // Remote machine not available
+                        log.debug("💡 Suggestion: Verify network connectivity to {} and firewall settings", remoteMachine);
+                        break;
+                    case MsmqConstants.MQ_ERROR_ILLEGAL_FORMATNAME: // Illegal format name
+                        log.debug("💡 Suggestion: Check DIRECT format name syntax: {}", formatName);
+                        break;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Error in remote connectivity diagnostics: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Extract remote machine name/IP from DIRECT format name.
+     */
+    private String extractRemoteMachine(String formatName) {
+        try {
+            if (formatName.toUpperCase().startsWith("DIRECT=TCP:")) {
+                String pathPart = formatName.substring("DIRECT=TCP:".length());
+                int backslashIndex = pathPart.indexOf('\\');
+                if (backslashIndex > 0) {
+                    return pathPart.substring(0, backslashIndex);
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
         }
     }
     

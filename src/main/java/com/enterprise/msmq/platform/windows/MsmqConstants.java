@@ -64,6 +64,10 @@ public final class MsmqConstants {
     public static final int MQ_ERROR_QUEUE_NOT_FOUND = 0xC00E0003;
     public static final int MQ_ERROR_ACCESS_DENIED = 0xC00E0025;
     public static final int MQ_ERROR_QUEUE_EXISTS = 0xC00E0005;
+    public static final int MQ_ERROR_SHARING_VIOLATION = 0xC00E0007;
+    public static final int MQ_ERROR_SERVICE_NOT_AVAILABLE = 0xC00E0008;
+    public static final int MQ_ERROR_COMPUTER_DOES_NOT_EXIST = 0xC00E000D;
+    public static final int MQ_ERROR_NO_DS = 0xC00E0013;
     public static final int MQ_ERROR_ILLEGAL_QUEUE_PATHNAME = 0xC00E001E;
     public static final int MQ_ERROR_ILLEGAL_PROPERTY_VALUE = 0xC00E001F;
     public static final int MQ_ERROR_ILLEGAL_PROPERTY_VT = 0xC00E0020;
@@ -78,6 +82,9 @@ public final class MsmqConstants {
     public static final int MQ_ERROR_SENDERID_BUFFER_TOO_SMALL = 0xC00E002A;
     public static final int MQ_ERROR_SECURITY_DESCRIPTOR_TOO_SMALL = 0xC00E002B;
     public static final int MQ_ERROR_CANNOT_IMPERSONATE_CLIENT = 0xC00E002C;
+    public static final int MQ_ERROR_FORMATNAME_BUFFER_TOO_SMALL_2 = 0xC00E002F;
+    public static final int MQ_ERROR_UNSUPPORTED_FORMATNAME_OPERATION_2 = 0xC00E0030;
+    public static final int MQ_ERROR_REMOTE_MACHINE_NOT_AVAILABLE = 0xC00E0040;
     
     private MsmqConstants() {
         // Utility class - prevent instantiation

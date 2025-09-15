@@ -145,4 +145,45 @@ public interface IMsmqQueueManager {
      * @return the peeked message, or empty if no message available or timeout
      */
     Optional<MsmqMessage> peekMessage(String queuePath, long timeout);
+
+    /**
+     * Sends a raw message body to a remote MSMQ queue (TCP/UNC/FormatName).
+     *
+     * @param remoteQueuePath the full remote queue path (e.g., TCP:ip\\private$\\QueueName)
+     * @param messageBody the message content to send
+     * @return true if message sent successfully, false otherwise
+     */
+    boolean sendMessageToRemote(String remoteQueuePath, String messageBody);
+
+    /**
+     * Sends a MsmqMessage object to a remote MSMQ queue (TCP/UNC/FormatName).
+     *
+     * @param remoteQueuePath the full remote queue path (e.g., TCP:ip\\private$\\QueueName)
+     * @param message the MsmqMessage object to send
+     * @return true if message sent successfully, false otherwise
+     */
+    boolean sendMessageToRemote(String remoteQueuePath, MsmqMessage message);
+
+    String convertToTcpPath(String queuePath);
+
+    /**
+     * Sends a raw message body to a remote MSMQ queue by specifying machine and queue name.
+     *
+     * @param remoteMachine the remote machine name or IP
+     * @param queueName the queue name (without path prefix)
+     * @param messageBody the message content to send
+     * @return true if message sent successfully, false otherwise
+     */
+    boolean sendMessageToRemote(String remoteMachine, String queueName, String messageBody);
+
+    /**
+     * Sends a MsmqMessage object to a remote MSMQ queue by specifying machine and queue name.
+     *
+     * @param remoteMachine the remote machine name or IP
+     * @param queueName the queue name (without path prefix)
+     * @param message the MsmqMessage object to send
+     * @return true if message sent successfully, false otherwise
+     */
+    boolean sendMessageToRemote(String remoteMachine, String queueName, MsmqMessage message);
+
 }

@@ -27,25 +27,27 @@ public class SecuritiesSettlementTestService {
      * Runs a test securities settlement when the application starts.
      * This demonstrates the paired RECE and DELI message generation.
      */
-    @EventListener(ApplicationReadyEvent.class)
+//    @EventListener(ApplicationReadyEvent.class)
     public void testSecuritiesSettlement() {
         try {
             log.info("🧪 Starting securities settlement test...");
 
             // Create a test settlement request
             SecuritiesSettlementRequest request = SecuritiesSettlementRequest.builder()
-                .securityName("DCB")
-                .quantity(10L)
-                .sellerAccountId("588990")
-                .buyerAccountId("593129")
+                .securityName("CRDB")
+                .quantity(10)
+                .sellerAccountId("639535")
+                .buyerAccountId("575883")
                 .sellerName("John Doe")
                 .buyerName("Jane Smith")
                 .tradeDate("2025-08-29")
                 .settlementDate("2025-09-03")
-                .queueName("securities-settlement-queue")
-                .buyerBrokerBic("BUYERBICXXX")
-                .sellerBrokerBic("SELLERBICXXX")
-                    .isinCode("TZ1996100214")
+                .queueName("FormatName:DIRECT=TCP:192.168.2.170\\private$\\crdb_to_dse")  // Fixed FormatName format
+                .buyerBrokerBic("B05/B")
+                .buyerCustodianBic("B05/C")
+                .sellerBrokerBic("B02/B")
+                .sellerCustodianBic("B02/C")
+                .isinCode("TZ1996100214")
                 .build();
 
             log.info("📋 Test settlement request created:");
@@ -55,25 +57,25 @@ public class SecuritiesSettlementTestService {
             log.info("   Buyer: {} ({})", request.getBuyerName(), request.getBuyerAccountId());
             log.info("   Queue: {}", request.getQueueName());
 
-            // Execute the settlement
-            SecuritiesSettlementResponse response = settlementService.sendPairedSettlement(request);
+            // Execute the settlement remotely
+            SecuritiesSettlementResponse responseRemotely = settlementService.sendPairedSettlement(request,"remote");
 
             // Log the results
-            if (response.isSuccess()) {
-                log.info("✅ Securities settlement test completed successfully!");
-                log.info("   Base Transaction ID: {}", response.getBaseTransactionId());
-                log.info("   RECE Transaction ID: {}", response.getReceTransactionId());
-                log.info("   DELI Transaction ID: {}", response.getDeliTransactionId());
-                log.info("   Correlation ID: {}", response.getCorrelationId());
-                log.info("   RECE Status: {}", response.getReceStatus());
-                log.info("   DELI Status: {}", response.getDeliStatus());
-                log.info("   Processed At: {}", response.getProcessedAt());
+            if (responseRemotely.isSuccess()) {
+                log.info("✅ [Remotely] Securities settlement test completed successfully!");
             } else {
-                log.error("❌ Securities settlement test failed!");
-                log.error("   Error: {}", response.getErrorMessage());
-                log.error("   RECE Status: {}", response.getReceStatus());
-                log.error("   DELI Status: {}", response.getDeliStatus());
+                log.error("❌ [Remotely] Securities settlement test failed!");
             }
+
+//            // Execute the settlement locally
+//            SecuritiesSettlementResponse responseLocally = settlementService.sendPairedSettlement(request,"local");
+//
+//            // Log the results
+//            if (responseLocally.isSuccess()) {
+//                log.info("✅ [Locally] Securities settlement test completed successfully!");
+//            } else {
+//                log.error("❌ [Locally] Securities settlement test failed!");
+//            }
 
         } catch (Exception e) {
             log.error("❌ Error during securities settlement test", e);
