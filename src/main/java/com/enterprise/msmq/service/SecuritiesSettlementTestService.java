@@ -34,18 +34,20 @@ public class SecuritiesSettlementTestService {
 
             // Create a test settlement request
             SecuritiesSettlementRequest request = SecuritiesSettlementRequest.builder()
-                .securityName("DCB")
-                .quantity(10L)
-                .sellerAccountId("588990")
+                .securityName("CRDB")
+                .quantity(10)
+                .sellerAccountId("609979")
                 .buyerAccountId("593129")
                 .sellerName("John Doe")
                 .buyerName("Jane Smith")
                 .tradeDate("2025-08-29")
                 .settlementDate("2025-09-03")
                 .queueName("FormatName:DIRECT=TCP:192.168.2.170\\private$\\crdb_to_dse")  // Fixed FormatName format
-                .buyerBrokerBic("BUYERBICXXX")
-                .sellerBrokerBic("SELLERBICXXX")
-                .isinCode("TZ1996100214")
+                .buyerBrokerBic("BO5/B")
+                    .buyerCustodianBic("B05/C")
+                .sellerBrokerBic("BO5/B")
+                    .sellerCustodianBic("B05/C")
+                .isinCode("TZ1996100305")
                 .build();
 
             log.info("📋 Test settlement request created:");

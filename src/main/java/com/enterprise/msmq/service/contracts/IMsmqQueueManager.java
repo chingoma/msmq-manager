@@ -185,4 +185,5 @@ public interface IMsmqQueueManager {
      * @return true if message sent successfully, false otherwise
      */
     boolean sendMessageToRemote(String remoteMachine, String queueName, MsmqMessage message);
+
 }

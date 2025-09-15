@@ -2,7 +2,6 @@ package com.enterprise.msmq.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,39 +33,31 @@ public class SendMessageRequest {
     private String body;
 
     @Schema(
-        description = "Message label for identification",
+        description = "Message label for identification (optional)",
         example = "PAYMENT_CONFIRMATION"
     )
     private String label;
 
     @Schema(
-        description = "Message priority (0-7, where 0 is highest)",
+        description = "Message priority (0-7, where 0 is highest, default: 3)",
         example = "3",
         minimum = "0",
         maximum = "7"
     )
-    @Positive(message = "Priority must be positive")
-    private Integer priority;
+    @Builder.Default
+    private Integer priority = 3;
 
     @Schema(
-        description = "Message correlation ID for related messages",
+        description = "Message correlation ID for related messages (optional)",
         example = "corr-12345-67890"
     )
     private String correlationId;
 
     @Schema(
-        description = "Message type identifier",
+        description = "Message type identifier (optional)",
         example = "SWIFT_MT103"
     )
     private String messageType;
-
-    @Schema(
-        description = "Destination queue name",
-        example = "payment-processing-queue",
-        required = true
-    )
-    @NotBlank(message = "Destination queue is required")
-    private String destinationQueue;
 
     @Schema(
         description = "Source queue name (optional)",
@@ -75,40 +66,33 @@ public class SendMessageRequest {
     private String sourceQueue;
 
     @Schema(
-        description = "Message timeout in milliseconds",
-        example = "30000",
-        minimum = "1000"
-    )
-    @Positive(message = "Timeout must be positive")
-    private Long timeoutMs;
-
-    @Schema(
-        description = "Whether the message is transactional",
-        example = "false"
-    )
-    private Boolean transactional;
-
-    @Schema(
-        description = "Whether the message requires acknowledgment",
-        example = "true"
-    )
-    private Boolean requiresAck;
-
-    @Schema(
-        description = "Custom message properties",
+        description = "Custom message properties (optional)",
         example = "{\"businessUnit\": \"payments\", \"customerId\": \"CUST001\"}"
     )
     private Map<String, Object> properties;
 
+    // XML Processing Options
+    
     @Schema(
-        description = "Message template name to use",
-        example = "SWIFT_PAYMENT_TEMPLATE"
+        description = "Whether to validate XML structure before sending (only applies if body contains XML)",
+        example = "true",
+        defaultValue = "false"
     )
-    private String templateName;
+    @Builder.Default
+    private Boolean validateXml = false;
 
     @Schema(
-        description = "Template parameters for message generation",
-        example = "{\"amount\": \"1000.00\", \"currency\": \"USD\", \"recipient\": \"John Doe\"}"
+        description = "Whether to format/prettify XML before sending (only applies if body contains XML)",
+        example = "false",
+        defaultValue = "false"
     )
-    private Map<String, String> templateParameters;
+    @Builder.Default
+    private Boolean formatXml = false;
+
+    @Schema(
+        description = "Content type hint for the message body (auto-detected if not specified)",
+        example = "application/xml",
+        allowableValues = {"text/plain", "application/xml", "text/xml", "application/json"}
+    )
+    private String contentType;
 }

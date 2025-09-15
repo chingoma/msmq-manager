@@ -92,7 +92,7 @@ public class SecuritiesSettlementResponse {
         example = "10"
     )
     @JsonProperty("quantity")
-    private Long quantity;
+    private int quantity;
 
     @Schema(
         description = "Seller account ID",

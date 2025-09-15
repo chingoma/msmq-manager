@@ -455,6 +455,87 @@ public class MsmqService implements IMsmqService {
     }
 
     @Override
+    public MsmqMessage sendMessage(String queueName, MsmqMessage message, String environment) throws MsmqException {
+        long startTime = System.currentTimeMillis();
+        String operation = "SEND_MESSAGE_REMOTE";
+
+        try {
+            logger.info("Sending message to MSMQ queue: {} (environment: {})", queueName, environment);
+
+            // Validate parameters
+            if (queueName == null || queueName.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_QUEUE_NAME, "Queue name cannot be null or empty");
+            }
+            if (message == null) {
+                throw new MsmqException(ResponseCode.VALIDATION_ERROR, "Message cannot be null");
+            }
+            if (message.getBody() == null || message.getBody().trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.INVALID_MESSAGE_FORMAT, "Message body cannot be null or empty");
+            }
+            if (environment == null || environment.trim().isEmpty()) {
+                throw new MsmqException(ResponseCode.VALIDATION_ERROR, "Environment cannot be null or empty");
+            }
+
+            // Validate environment
+            if (!"local".equalsIgnoreCase(environment) && !"remote".equalsIgnoreCase(environment)) {
+                throw new MsmqException(ResponseCode.VALIDATION_ERROR, "Environment must be 'local' or 'remote'");
+            }
+
+            // Check if queue exists (only for local environment)
+            if ("local".equalsIgnoreCase(environment) && !queueExists(queueName)) {
+                throw new MsmqException(ResponseCode.QUEUE_NOT_FOUND, "Queue not found: " + queueName);
+            }
+
+            // NEW: Validate queue direction for sending messages (only for local)
+            if ("local".equalsIgnoreCase(environment)) {
+                validateQueueDirectionForSending(queueName);
+            }
+
+            // Ensure connection is active
+            ensureConnection();
+
+            // Parse and validate message
+            MsmqMessage parsedMessage = messageParser.parseOutgoingMessage(message);
+
+            // Send message using appropriate queue manager based on environment
+            boolean success;
+            if ("remote".equalsIgnoreCase(environment)) {
+                // For remote sending, use the proper remote sending methods
+                logger.info("Sending to remote environment: {} using remote machine: 192.168.2.170", queueName);
+                
+                // Check if queueName is already a FormatName path
+                if (queueName.toUpperCase().startsWith("FORMATNAME:")) {
+                    success = queueManager.sendMessageToRemote(queueName, parsedMessage);
+                } else {
+                    // Use machine name and queue name for remote sending
+                    success = queueManager.sendMessageToRemote("192.168.2.170", queueName, parsedMessage);
+                }
+            } else {
+                // Local sending
+                success = queueManager.sendMessage(queueName, parsedMessage);
+            }
+
+            if (!success) {
+                throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to send message to queue: " + queueName);
+            }
+
+            // Update metrics
+            redisMetricsService.incrementTotalMessageCount("sent");
+            redisMetricsService.storeOperationTiming(operation, System.currentTimeMillis() - startTime);
+            logger.info("Successfully sent message to MSMQ queue: {} (environment: {})", queueName, environment);
+
+            return parsedMessage;
+
+        } catch (MsmqException e) {
+            handleOperationError(operation, e);
+            throw e;
+        } catch (Exception e) {
+            handleOperationError(operation, new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to send message to queue: " + queueName, e));
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to send message to queue: " + queueName, e);
+        }
+    }
+
+    @Override
     public Optional<MsmqMessage> receiveMessage(String queueName, long timeout) throws MsmqException {
         long startTime = System.currentTimeMillis();
         String operation = "RECEIVE_MESSAGE";

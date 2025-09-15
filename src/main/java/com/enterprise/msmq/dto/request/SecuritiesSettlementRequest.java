@@ -49,7 +49,7 @@ public class SecuritiesSettlementRequest {
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be positive")
     @JsonProperty("quantity")
-    private Long quantity;
+    private int quantity;
 
     @Schema(
         description = "Seller's account identifier",

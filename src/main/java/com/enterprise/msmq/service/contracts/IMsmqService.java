@@ -102,6 +102,17 @@ public interface IMsmqService {
     MsmqMessage sendMessage(String queueName, MsmqMessage message) throws MsmqException;
 
     /**
+     * Sends a message to a specific queue with environment support.
+     * 
+     * @param queueName the destination queue name
+     * @param message the message to send
+     * @param environment the target environment ("local" or "remote")
+     * @return the sent message with updated information
+     * @throws MsmqException if message sending fails
+     */
+    MsmqMessage sendMessage(String queueName, MsmqMessage message, String environment) throws MsmqException;
+
+    /**
      * Receives a message from a specific queue.
      * 
      * @param queueName the source queue name

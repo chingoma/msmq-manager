@@ -227,7 +227,7 @@ public class SecuritiesSettlementService {
         parameters.put("ACCOUNT_OWNER_ID", request.getSellerAccountId());
         parameters.put("ACCOUNT_OWNER_ISSUER", "CSD");
         parameters.put("ACCOUNT_OWNER_SCHEME", "SOR ACCOUNT");
-        parameters.put("SAFEEPING_ACCOUNT_ID", request.getSellerBrokerBic());
+        parameters.put("SAFEEPING_ACCOUNT_ID", request.getSellerCustodianBic());
         parameters.put("SAFEEPING_PLACE_TYPE", "CUST");
         parameters.put("SAFEEPING_PLACE_ID", "DSTXTZTZXXX");
         parameters.put("SECURITIES_TRANSACTION_TYPE", "TRAD");
@@ -317,9 +317,9 @@ public class SecuritiesSettlementService {
         parameters.put("ACCOUNT_OWNER_ID", request.getBuyerAccountId());
         parameters.put("ACCOUNT_OWNER_ISSUER", "CSD");
         parameters.put("ACCOUNT_OWNER_SCHEME", "SOR ACCOUNT");
-        parameters.put("SAFEEPING_ACCOUNT_ID", request.getBuyerBrokerBic());
+        parameters.put("SAFEEPING_ACCOUNT_ID", request.getBuyerCustodianBic());
         parameters.put("SAFEEPING_PLACE_TYPE", "CUST");
-        parameters.put("SAFEEPING_PLACE_ID", "DSTXTZTZ");
+        parameters.put("SAFEEPING_PLACE_ID", "DSTXTZTZXXX");
         parameters.put("SECURITIES_TRANSACTION_TYPE", "TRAD");
         parameters.put("SETTLEMENT_SYSTEM_METHOD", "NSET");
         
@@ -336,7 +336,7 @@ public class SecuritiesSettlementService {
         parameters.put("DELIVERING_PARTY3_ISSUER", "CSD");
         parameters.put("DELIVERING_PARTY3_SCHEME", "MB SCA");
         
-        parameters.put("RECEIVING_DEPOSITORY_BIC", "SAFM");
+        parameters.put("RECEIVING_DEPOSITORY_BIC", "SAFMXXXX");
         parameters.put("RECEIVING_PARTY1_ID", request.getSellerBrokerBic());
         parameters.put("RECEIVING_PARTY1_ISSUER", "CSD");
         parameters.put("RECEIVING_PARTY1_SCHEME", "TRADING PARTY");
