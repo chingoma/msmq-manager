@@ -8,6 +8,7 @@ import com.enterprise.msmq.dto.MsmqMessage;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,6 +40,9 @@ public class MsmqMessageTemplateService {
     private final MsmqMessageTemplateRepository templateRepository;
     private final MsmqQueueManagerFactory queueManagerFactory;
     private final MessageStatusService messageStatusService;
+    
+    @Value("${msmq.remote.server:192.168.2.170}")
+    private String remoteMsmqServer;
 
     /**
      * Create a new message template.
@@ -152,7 +156,7 @@ public class MsmqMessageTemplateService {
                         messageSent = queueManager.sendMessageToRemote(queueName, message);
                     } else {
                         // Use two-parameter method for simple queue names
-                        messageSent = queueManager.sendMessageToRemote("192.168.2.170", queueName, message);
+                        messageSent = queueManager.sendMessageToRemote(remoteMsmqServer, queueName, message);
                     }
                 } else if(environment.equalsIgnoreCase("local")) {
                     messageSent = queueManager.sendMessage(queueName, message);
@@ -166,7 +170,7 @@ public class MsmqMessageTemplateService {
                     messageSent = queueManager.sendMessageToRemote(queueName, message);
                 } else {
                     // Use two-parameter method for simple queue names
-                    messageSent = queueManager.sendMessageToRemote("192.168.2.170", queueName, message);
+                    messageSent = queueManager.sendMessageToRemote(remoteMsmqServer, queueName, message);
                 }
             }
 
@@ -235,7 +239,7 @@ public class MsmqMessageTemplateService {
                         messageSent = queueManager.sendMessageToRemote(queueName, message);
                     } else {
                         // Use two-parameter method for simple queue names
-                        messageSent = queueManager.sendMessageToRemote("192.168.2.170", queueName, message);
+                        messageSent = queueManager.sendMessageToRemote(remoteMsmqServer, queueName, message);
                     }
                 } else if(environment.equalsIgnoreCase("local")) {
                     messageSent = queueManager.sendMessage(queueName, message);
@@ -249,7 +253,7 @@ public class MsmqMessageTemplateService {
                     messageSent = queueManager.sendMessageToRemote(queueName, message);
                 } else {
                     // Use two-parameter method for simple queue names
-                    messageSent = queueManager.sendMessageToRemote("192.168.2.170", queueName, message);
+                    messageSent = queueManager.sendMessageToRemote(remoteMsmqServer, queueName, message);
                 }
             }
 

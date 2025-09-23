@@ -14,6 +14,7 @@ import com.enterprise.msmq.service.contracts.IMsmqQueueManager;
 import com.enterprise.msmq.validator.MsmqConfigurationValidator;
 import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
 import com.enterprise.msmq.model.MsmqQueueConfig;
+import org.springframework.beans.factory.annotation.Value;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,9 @@ public class MsmqService implements IMsmqService {
     private final RedisMetricsService redisMetricsService;
     private final MsmqConfigurationValidator configurationValidator;
     private final MsmqQueueConfigRepository queueConfigRepository;
+
+    @Value("${msmq.remote.server:192.168.2.170}")
+    private String remoteMsmqServer;
 
     private IMsmqConnectionManager connectionManager;
     private IMsmqQueueManager queueManager;
@@ -512,14 +516,14 @@ public class MsmqService implements IMsmqService {
             boolean success;
             if ("remote".equalsIgnoreCase(environment)) {
                 // For remote sending, use the proper remote sending methods
-                logger.info("Sending to remote environment: {} using remote machine: 192.168.2.170", queueName);
+                logger.info("Sending to remote environment: {} using remote machine: {}", queueName, remoteMsmqServer);
                 
                 // Check if queueName is already a FormatName path
                 if (queueName.toUpperCase().startsWith("FORMATNAME:")) {
                     success = queueManager.sendMessageToRemote(queueName, parsedMessage);
                 } else {
                     // Use machine name and queue name for remote sending
-                    success = queueManager.sendMessageToRemote("192.168.2.170", queueName, parsedMessage);
+                    success = queueManager.sendMessageToRemote(remoteMsmqServer, queueName, parsedMessage);
                 }
             } else {
                 // Local sending

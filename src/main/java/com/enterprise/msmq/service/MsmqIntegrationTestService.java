@@ -38,6 +38,9 @@ public class MsmqIntegrationTestService {
     @Value("${msmq.integration.tests.enabled:true}")
     private boolean integrationTestsEnabled;
 
+    @Value("${msmq.remote.server:192.168.2.170}")
+    private String remoteMsmqServer;
+
     @Value("${msmq.integration.tests.delay:5000}")
     private long integrationTestsDelay;
 
@@ -221,7 +224,7 @@ public class MsmqIntegrationTestService {
             // Send message using template with correct method signature
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SHARE_TRANSFER_DETAILED", 
-                "FormatName:DIRECT=TCP:192.168.2.170\\private$\\crdb_to_dse", // queue name
+                "FormatName:DIRECT=TCP:" + remoteMsmqServer + "\\private$\\crdb_to_dse", // queue name
                 parameters,
                 "remote", // connection type
                 1, // priority

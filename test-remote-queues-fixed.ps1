@@ -1,7 +1,10 @@
 # Test script for the fixed remote queue fetching approach
 # This uses the FormatName method that works with MSMQ security restrictions
 
-$remoteHost = "192.168.2.170"
+$remoteHost = $env:MSMQ_REMOTE_SERVER
+if (-not $remoteHost) {
+    $remoteHost = "192.168.2.170"  # Default fallback
+}
 $queueNames = @("securities-settlement-queue", "testqueue", "orders-queue", "settlements-queue", "payment-queue", "notification-queue")
 
 Write-Host "Testing Fixed Remote Queue Fetching" -ForegroundColor Green

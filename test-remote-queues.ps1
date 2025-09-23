@@ -1,7 +1,10 @@
 # Test script to verify remote queue fetching PowerShell command
 # This script tests the exact command used in the Java application
 
-$remoteHost = "192.168.2.170"
+$remoteHost = $env:MSMQ_REMOTE_SERVER
+if (-not $remoteHost) {
+    $remoteHost = "192.168.2.170"  # Default fallback
+}
 
 Write-Host "Testing remote queue fetching for host: $remoteHost"
 Write-Host "================================================"

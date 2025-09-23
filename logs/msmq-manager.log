@@ -1145,3 +1145,630 @@ Caused by: java.nio.channels.ClosedChannelException: null
 2025-09-23 05:10:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
 2025-09-23 05:10:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
 2025-09-23 05:10:50 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 35ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:15:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:15:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:15:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:15:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:15:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:15:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:15:50 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 25ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:20:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:20:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:20:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:20:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:20:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:20:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:20:50 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 31ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:25:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:25:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:25:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:25:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:25:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:25:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:25:50 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 38ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:30:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:30:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:30:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:30:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:30:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:30:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:30:50 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 28ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:35:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:35:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:35:50 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:35:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:35:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:35:50 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:35:50 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 22ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:36:07 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-09-23 05:36:07 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-09-23 05:36:07 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-09-23 05:44:43 [main] INFO  c.e.msmq.MsmqManagerApplication - Starting MsmqManagerApplication using Java 23.0.1 with PID 39472 (C:\Users\kelvin.chingoma\msmq-manager\target\classes started by kelvin.chingoma in C:\Users\kelvin.chingoma\msmq-manager)
+2025-09-23 05:44:43 [main] INFO  c.e.msmq.MsmqManagerApplication - The following 1 profile is active: "dev"
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 134 ms. Found 5 JPA repository interfaces.
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.EmailConfigurationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MailingListRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageTemplateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqQueueConfigRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 05:44:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 7 ms. Found 0 Redis repository interfaces.
+2025-09-23 05:44:46 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-09-23 05:44:46 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-23 05:44:46 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-09-23 05:44:46 [main] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2025-09-23 05:44:46 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3262 ms
+2025-09-23 05:44:46 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-09-23 05:44:46 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@153c6603
+2025-09-23 05:44:46 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-09-23 05:44:46 [main] INFO  o.f.c.i.license.VersionPrinter - Flyway Community Edition 9.22.3 by Redgate
+2025-09-23 05:44:46 [main] INFO  o.f.c.i.license.VersionPrinter - See release notes here: https://rd.gt/416ObMi
+2025-09-23 05:44:46 [main] INFO  o.f.c.i.license.VersionPrinter - 
+2025-09-23 05:44:46 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/msmq_manager (PostgreSQL 16.4)
+2025-09-23 05:44:46 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.4 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-09-23 05:44:47 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 8 migrations (execution time 00:00.072s)
+2025-09-23 05:44:47 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 8
+2025-09-23 05:44:47 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2025-09-23 05:44:47 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-23 05:44:47 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-09-23 05:44:47 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-09-23 05:44:47 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-09-23 05:44:47 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-09-23 05:44:48 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-09-23 05:44:48 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-09-23 05:44:49 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-09-23 05:44:50 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ connection manager using type: POWERSHELL
+2025-09-23 05:44:50 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ queue manager using type: POWERSHELL
+2025-09-23 05:44:51 [main] INFO  c.e.m.s.MsmqStatusListenerService - Initializing MSMQ Status Listeners...
+2025-09-23 05:44:51 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: status_response_queue
+2025-09-23 05:44:51 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: error_notification_queue
+2025-09-23 05:44:51 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: processing_status_queue
+2025-09-23 05:44:51 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: audit_logs_queue
+2025-09-23 05:44:51 [main] INFO  c.e.m.s.MsmqStatusListenerService - MSMQ Status Listeners initialized successfully
+2025-09-23 05:44:51 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-09-23 05:44:52 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-09-23 05:44:52 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@320f9b40, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7dea9ff9, org.springframework.security.web.context.SecurityContextHolderFilter@7dc175c6, org.springframework.security.web.header.HeaderWriterFilter@616a370b, org.springframework.web.filter.CorsFilter@3767973, org.springframework.security.web.authentication.logout.LogoutFilter@36fd028d, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@9f7a8cc, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@1f78d3bc, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@5b74c45a, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@62b92df8, org.springframework.security.web.access.ExceptionTranslationFilter@24d5a11a, org.springframework.security.web.access.intercept.AuthorizationFilter@4d17ce84]
+2025-09-23 05:44:54 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path '/api'
+2025-09-23 05:44:54 [main] INFO  c.e.msmq.MsmqManagerApplication - Started MsmqManagerApplication in 11.555 seconds (process running for 12.583)
+2025-09-23 05:44:54 [main] INFO  c.e.msmq.config.MsmqStartupConfig - 🚀 Application is ready, starting initialization sequence...
+2025-09-23 05:44:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:44:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:44:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:44:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:44:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:44:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:44:54 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 312ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:44:54 [RMI TCP Connection(4)-10.81.234.4] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-23 05:44:54 [RMI TCP Connection(4)-10.81.234.4] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-09-23 05:44:54 [RMI TCP Connection(4)-10.81.234.4] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2025-09-23 05:44:56 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Step 1: Initializing default configurations...
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - 🚀 Starting default configuration initialization...
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Initializing default email configuration...
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Default email configuration already exists, skipping initialization
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Initializing default mailing list...
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Default mailing list 'System Administrators' already exists, skipping initialization
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - ✅ Default configuration initialization completed successfully
+2025-09-23 05:44:56 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Step 2: Starting MSMQ queue synchronization...
+2025-09-23 05:44:56 [main] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:44:56 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:44:56 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:44:56 [main] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:44:56 [main] INFO  c.e.msmq.config.MsmqStartupConfig - ✅ MSMQ startup initialization completed successfully
+2025-09-23 05:44:56 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Queue synchronization: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:44:56 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Default email config exists: true
+2025-09-23 05:44:56 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Default mailing list exists: true (System Administrators)
+2025-09-23 05:44:56 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 🚀 Starting MSMQ Integration Tests (delay: 5000ms)...
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ All MSMQ Integration Tests completed successfully!
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Creating Securities Settlement template...
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ℹ️ Securities Settlement template already exists, skipping creation
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - 🧪 Starting securities settlement test...
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - 📋 Test settlement request created:
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Security: CRDB
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Quantity: 77
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Queue: crdb_to_dse
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.SecuritiesSettlementService - Starting paired settlement for security: TZ1996100214 with quantity: 77
+2025-09-23 05:45:01 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Sending message to remote queue via PowerShell using TCP: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to remote queue via PowerShell: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 05:45:02 [main] INFO  c.e.m.service.MessageStatusService - Message stored successfully: ID=25, TransactionID=2509235ACE02A, CommonRef=1NWCTTNJ1
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SECURITIES_SETTLEMENT to queue: crdb_to_dse
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ RECE message sent successfully. Transaction ID: 2509235ACE02A
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Sending message to remote queue via PowerShell using TCP: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to remote queue via PowerShell: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 05:45:02 [main] INFO  c.e.m.service.MessageStatusService - Message stored successfully: ID=26, TransactionID=2509235ACE02B, CommonRef=1NWCTTNJ1
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SECURITIES_SETTLEMENT to queue: crdb_to_dse
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ DELI message sent successfully. Transaction ID: 2509235ACE02B
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ Paired settlement completed successfully. RECE: 2509235ACE02A, DELI: 2509235ACE02B
+2025-09-23 05:45:02 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - ✅ [Remotely] Securities settlement test completed successfully!
+2025-09-23 05:45:04 [boundedElastic-1] WARN  o.s.b.a.d.r.RedisReactiveHealthIndicator - Redis health check failed
+org.springframework.data.redis.RedisConnectionFailureException: Unable to connect to Redis
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$ExceptionTranslatingConnectionProvider.translateException(LettuceConnectionFactory.java:1805)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$ExceptionTranslatingConnectionProvider.getConnection(LettuceConnectionFactory.java:1736)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$SharedConnection.getNativeConnection(LettuceConnectionFactory.java:1538)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$SharedConnection.lambda$getConnection$0(LettuceConnectionFactory.java:1518)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.doInLock(LettuceConnectionFactory.java:1478)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$SharedConnection.getConnection(LettuceConnectionFactory.java:1515)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getSharedReactiveConnection(LettuceConnectionFactory.java:1224)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getReactiveConnection(LettuceConnectionFactory.java:1099)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getReactiveConnection(LettuceConnectionFactory.java:130)
+	at reactor.core.publisher.MonoSupplier.call(MonoSupplier.java:67)
+	at reactor.core.publisher.FluxSubscribeOnCallable$CallableSubscribeOnSubscription.run(FluxSubscribeOnCallable.java:228)
+	at reactor.core.scheduler.SchedulerTask.call(SchedulerTask.java:68)
+	at reactor.core.scheduler.SchedulerTask.call(SchedulerTask.java:28)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1575)
+Caused by: org.springframework.data.redis.connection.PoolException: Could not get a resource from the pool
+	at org.springframework.data.redis.connection.lettuce.LettucePoolingConnectionProvider.getConnection(LettucePoolingConnectionProvider.java:104)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$ExceptionTranslatingConnectionProvider.getConnection(LettuceConnectionFactory.java:1734)
+	... 16 common frames omitted
+Caused by: io.lettuce.core.RedisConnectionException: Unable to connect to redis-16855.c15.us-east-1-2.ec2.redns.redis-cloud.com/<unresolved>:16855
+	at io.lettuce.core.RedisConnectionException.create(RedisConnectionException.java:78)
+	at io.lettuce.core.RedisConnectionException.create(RedisConnectionException.java:56)
+	at io.lettuce.core.AbstractRedisClient.getConnection(AbstractRedisClient.java:350)
+	at io.lettuce.core.RedisClient.connect(RedisClient.java:215)
+	at org.springframework.data.redis.connection.lettuce.StandaloneConnectionProvider.lambda$getConnection$1(StandaloneConnectionProvider.java:112)
+	at java.base/java.util.Optional.orElseGet(Optional.java:364)
+	at org.springframework.data.redis.connection.lettuce.StandaloneConnectionProvider.getConnection(StandaloneConnectionProvider.java:112)
+	at org.springframework.data.redis.connection.lettuce.LettucePoolingConnectionProvider.lambda$getConnection$0(LettucePoolingConnectionProvider.java:93)
+	at io.lettuce.core.support.ConnectionPoolSupport$RedisPooledObjectFactory.create(ConnectionPoolSupport.java:211)
+	at io.lettuce.core.support.ConnectionPoolSupport$RedisPooledObjectFactory.create(ConnectionPoolSupport.java:201)
+	at org.apache.commons.pool2.BasePooledObjectFactory.makeObject(BasePooledObjectFactory.java:71)
+	at org.apache.commons.pool2.impl.GenericObjectPool.create(GenericObjectPool.java:566)
+	at org.apache.commons.pool2.impl.GenericObjectPool.borrowObject(GenericObjectPool.java:306)
+	at org.apache.commons.pool2.impl.GenericObjectPool.borrowObject(GenericObjectPool.java:233)
+	at io.lettuce.core.support.ConnectionPoolSupport$1.borrowObject(ConnectionPoolSupport.java:122)
+	at io.lettuce.core.support.ConnectionPoolSupport$1.borrowObject(ConnectionPoolSupport.java:117)
+	at org.springframework.data.redis.connection.lettuce.LettucePoolingConnectionProvider.getConnection(LettucePoolingConnectionProvider.java:99)
+	... 17 common frames omitted
+Caused by: java.nio.channels.ClosedChannelException: null
+	at io.netty.channel.nio.AbstractNioChannel.doClose(AbstractNioChannel.java:502)
+	at io.netty.channel.socket.nio.NioSocketChannel.doClose(NioSocketChannel.java:349)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.doClose0(AbstractChannel.java:754)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.close(AbstractChannel.java:731)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.close(AbstractChannel.java:620)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.close(DefaultChannelPipeline.java:1352)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeClose(AbstractChannelHandlerContext.java:749)
+	at io.netty.channel.AbstractChannelHandlerContext.access$1200(AbstractChannelHandlerContext.java:61)
+	at io.netty.channel.AbstractChannelHandlerContext$11.run(AbstractChannelHandlerContext.java:732)
+	at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:470)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:569)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	... 1 common frames omitted
+2025-09-23 05:49:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:49:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:49:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:49:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:49:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:49:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:49:54 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 28ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:54:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:54:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:54:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:54:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:54:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:54:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:54:54 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 29ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:59:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 05:59:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 05:59:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 05:59:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 05:59:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 05:59:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 05:59:54 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 17ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:04:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 06:04:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 06:04:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 06:04:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 06:04:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 06:04:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:04:54 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 37ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:09:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 06:09:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 06:09:54 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 06:09:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 06:09:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 06:09:54 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:09:54 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 17ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Shutting down MSMQ Status Listeners...
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: status_response_queue
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: error_notification_queue
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: processing_status_queue
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: audit_logs_queue
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - MSMQ Status Listeners shutdown complete
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-09-23 06:12:25 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-09-23 06:12:36 [main] INFO  c.e.msmq.MsmqManagerApplication - Starting MsmqManagerApplication using Java 23.0.1 with PID 37948 (C:\Users\kelvin.chingoma\msmq-manager\target\classes started by kelvin.chingoma in C:\Users\kelvin.chingoma\msmq-manager)
+2025-09-23 06:12:36 [main] INFO  c.e.msmq.MsmqManagerApplication - The following 1 profile is active: "dev"
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 162 ms. Found 5 JPA repository interfaces.
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.EmailConfigurationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MailingListRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageTemplateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqQueueConfigRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:12:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 6 ms. Found 0 Redis repository interfaces.
+2025-09-23 06:12:39 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-09-23 06:12:39 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-23 06:12:39 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-09-23 06:12:39 [main] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2025-09-23 06:12:39 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2935 ms
+2025-09-23 06:12:40 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-09-23 06:12:40 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@75add13c
+2025-09-23 06:12:40 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-09-23 06:12:40 [main] INFO  o.f.c.i.license.VersionPrinter - Flyway Community Edition 9.22.3 by Redgate
+2025-09-23 06:12:40 [main] INFO  o.f.c.i.license.VersionPrinter - See release notes here: https://rd.gt/416ObMi
+2025-09-23 06:12:40 [main] INFO  o.f.c.i.license.VersionPrinter - 
+2025-09-23 06:12:40 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/msmq_manager (PostgreSQL 16.4)
+2025-09-23 06:12:40 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.4 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-09-23 06:12:40 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 8 migrations (execution time 00:00.066s)
+2025-09-23 06:12:40 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 8
+2025-09-23 06:12:40 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2025-09-23 06:12:40 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-23 06:12:40 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-09-23 06:12:40 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-09-23 06:12:41 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-09-23 06:12:41 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-09-23 06:12:42 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-09-23 06:12:42 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-09-23 06:12:42 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-09-23 06:12:43 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ connection manager using type: POWERSHELL
+2025-09-23 06:12:43 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ queue manager using type: POWERSHELL
+2025-09-23 06:12:44 [main] INFO  c.e.m.s.MsmqStatusListenerService - Initializing MSMQ Status Listeners...
+2025-09-23 06:12:44 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: status_response_queue
+2025-09-23 06:12:44 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: error_notification_queue
+2025-09-23 06:12:44 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: processing_status_queue
+2025-09-23 06:12:44 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: audit_logs_queue
+2025-09-23 06:12:44 [main] INFO  c.e.m.s.MsmqStatusListenerService - MSMQ Status Listeners initialized successfully
+2025-09-23 06:12:44 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-09-23 06:12:45 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-09-23 06:12:45 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@77e55368, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@5d61ba76, org.springframework.security.web.context.SecurityContextHolderFilter@59e285e, org.springframework.security.web.header.HeaderWriterFilter@6948460f, org.springframework.web.filter.CorsFilter@44ebd5e9, org.springframework.security.web.authentication.logout.LogoutFilter@28336feb, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@1a7186ef, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@1772cc68, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3a0f0552, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@4eb168a1, org.springframework.security.web.access.ExceptionTranslationFilter@39cdbc4e, org.springframework.security.web.access.intercept.AuthorizationFilter@ce5417f]
+2025-09-23 06:12:46 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path '/api'
+2025-09-23 06:12:46 [main] INFO  c.e.msmq.MsmqManagerApplication - Started MsmqManagerApplication in 9.816 seconds (process running for 11.175)
+2025-09-23 06:12:46 [main] INFO  c.e.msmq.config.MsmqStartupConfig - 🚀 Application is ready, starting initialization sequence...
+2025-09-23 06:12:46 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 06:12:46 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 06:12:46 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 06:12:46 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 06:12:46 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 06:12:46 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:12:46 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 221ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:12:47 [RMI TCP Connection(4)-10.81.234.4] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-23 06:12:47 [RMI TCP Connection(4)-10.81.234.4] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-09-23 06:12:47 [RMI TCP Connection(4)-10.81.234.4] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 6 ms
+2025-09-23 06:12:48 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Step 1: Initializing default configurations...
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - 🚀 Starting default configuration initialization...
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Initializing default email configuration...
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Default email configuration already exists, skipping initialization
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Initializing default mailing list...
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Default mailing list 'System Administrators' already exists, skipping initialization
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - ✅ Default configuration initialization completed successfully
+2025-09-23 06:12:48 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Step 2: Starting MSMQ queue synchronization...
+2025-09-23 06:12:48 [main] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 06:12:48 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 06:12:48 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 06:12:48 [main] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:12:48 [main] INFO  c.e.msmq.config.MsmqStartupConfig - ✅ MSMQ startup initialization completed successfully
+2025-09-23 06:12:48 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Queue synchronization: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:12:48 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Default email config exists: true
+2025-09-23 06:12:48 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Default mailing list exists: true (System Administrators)
+2025-09-23 06:12:48 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 🚀 Starting MSMQ Integration Tests (delay: 5000ms)...
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ All MSMQ Integration Tests completed successfully!
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Creating Securities Settlement template...
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ℹ️ Securities Settlement template already exists, skipping creation
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - 🧪 Starting securities settlement test...
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - 📋 Test settlement request created:
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Security: CRDB
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Quantity: 77
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Queue: crdb_to_dse
+2025-09-23 06:12:53 [main] INFO  c.e.m.s.SecuritiesSettlementService - Starting paired settlement for security: TZ1996100214 with quantity: 77
+2025-09-23 06:12:54 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Sending message to remote queue via PowerShell using TCP: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 06:12:54 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to remote queue via PowerShell: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 06:12:54 [main] INFO  c.e.m.service.MessageStatusService - Message stored successfully: ID=27, TransactionID=25092311FAECA, CommonRef=2ZQVUA0WK
+2025-09-23 06:12:54 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SECURITIES_SETTLEMENT to queue: crdb_to_dse
+2025-09-23 06:12:54 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ RECE message sent successfully. Transaction ID: 25092311FAECA
+2025-09-23 06:12:54 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Sending message to remote queue via PowerShell using TCP: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 06:12:55 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to remote queue via PowerShell: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 06:12:55 [main] INFO  c.e.m.service.MessageStatusService - Message stored successfully: ID=28, TransactionID=25092311FAECB, CommonRef=2ZQVUA0WK
+2025-09-23 06:12:55 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SECURITIES_SETTLEMENT to queue: crdb_to_dse
+2025-09-23 06:12:55 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ DELI message sent successfully. Transaction ID: 25092311FAECB
+2025-09-23 06:12:55 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ Paired settlement completed successfully. RECE: 25092311FAECA, DELI: 25092311FAECB
+2025-09-23 06:12:55 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - ✅ [Remotely] Securities settlement test completed successfully!
+2025-09-23 06:12:57 [RMI TCP Connection(3)-10.81.234.4] WARN  o.s.b.a.health.HealthEndpointSupport - Health contributor org.springframework.boot.actuate.mail.MailHealthIndicator (mail) took 10210ms to respond
+2025-09-23 06:12:59 [boundedElastic-1] WARN  o.s.b.a.d.r.RedisReactiveHealthIndicator - Redis health check failed
+org.springframework.data.redis.RedisConnectionFailureException: Unable to connect to Redis
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$ExceptionTranslatingConnectionProvider.translateException(LettuceConnectionFactory.java:1805)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$ExceptionTranslatingConnectionProvider.getConnection(LettuceConnectionFactory.java:1736)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$SharedConnection.getNativeConnection(LettuceConnectionFactory.java:1538)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$SharedConnection.lambda$getConnection$0(LettuceConnectionFactory.java:1518)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.doInLock(LettuceConnectionFactory.java:1478)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$SharedConnection.getConnection(LettuceConnectionFactory.java:1515)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getSharedReactiveConnection(LettuceConnectionFactory.java:1224)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getReactiveConnection(LettuceConnectionFactory.java:1099)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getReactiveConnection(LettuceConnectionFactory.java:130)
+	at reactor.core.publisher.MonoSupplier.call(MonoSupplier.java:67)
+	at reactor.core.publisher.FluxSubscribeOnCallable$CallableSubscribeOnSubscription.run(FluxSubscribeOnCallable.java:228)
+	at reactor.core.scheduler.SchedulerTask.call(SchedulerTask.java:68)
+	at reactor.core.scheduler.SchedulerTask.call(SchedulerTask.java:28)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1575)
+Caused by: org.springframework.data.redis.connection.PoolException: Could not get a resource from the pool
+	at org.springframework.data.redis.connection.lettuce.LettucePoolingConnectionProvider.getConnection(LettucePoolingConnectionProvider.java:104)
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory$ExceptionTranslatingConnectionProvider.getConnection(LettuceConnectionFactory.java:1734)
+	... 16 common frames omitted
+Caused by: io.lettuce.core.RedisConnectionException: Unable to connect to redis-16855.c15.us-east-1-2.ec2.redns.redis-cloud.com/<unresolved>:16855
+	at io.lettuce.core.RedisConnectionException.create(RedisConnectionException.java:78)
+	at io.lettuce.core.RedisConnectionException.create(RedisConnectionException.java:56)
+	at io.lettuce.core.AbstractRedisClient.getConnection(AbstractRedisClient.java:350)
+	at io.lettuce.core.RedisClient.connect(RedisClient.java:215)
+	at org.springframework.data.redis.connection.lettuce.StandaloneConnectionProvider.lambda$getConnection$1(StandaloneConnectionProvider.java:112)
+	at java.base/java.util.Optional.orElseGet(Optional.java:364)
+	at org.springframework.data.redis.connection.lettuce.StandaloneConnectionProvider.getConnection(StandaloneConnectionProvider.java:112)
+	at org.springframework.data.redis.connection.lettuce.LettucePoolingConnectionProvider.lambda$getConnection$0(LettucePoolingConnectionProvider.java:93)
+	at io.lettuce.core.support.ConnectionPoolSupport$RedisPooledObjectFactory.create(ConnectionPoolSupport.java:211)
+	at io.lettuce.core.support.ConnectionPoolSupport$RedisPooledObjectFactory.create(ConnectionPoolSupport.java:201)
+	at org.apache.commons.pool2.BasePooledObjectFactory.makeObject(BasePooledObjectFactory.java:71)
+	at org.apache.commons.pool2.impl.GenericObjectPool.create(GenericObjectPool.java:566)
+	at org.apache.commons.pool2.impl.GenericObjectPool.borrowObject(GenericObjectPool.java:306)
+	at org.apache.commons.pool2.impl.GenericObjectPool.borrowObject(GenericObjectPool.java:233)
+	at io.lettuce.core.support.ConnectionPoolSupport$1.borrowObject(ConnectionPoolSupport.java:122)
+	at io.lettuce.core.support.ConnectionPoolSupport$1.borrowObject(ConnectionPoolSupport.java:117)
+	at org.springframework.data.redis.connection.lettuce.LettucePoolingConnectionProvider.getConnection(LettucePoolingConnectionProvider.java:99)
+	... 17 common frames omitted
+Caused by: java.nio.channels.ClosedChannelException: null
+	at io.netty.channel.nio.AbstractNioChannel.doClose(AbstractNioChannel.java:502)
+	at io.netty.channel.socket.nio.NioSocketChannel.doClose(NioSocketChannel.java:349)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.doClose0(AbstractChannel.java:754)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.close(AbstractChannel.java:731)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.close(AbstractChannel.java:620)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.close(DefaultChannelPipeline.java:1352)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeClose(AbstractChannelHandlerContext.java:749)
+	at io.netty.channel.AbstractChannelHandlerContext.access$1200(AbstractChannelHandlerContext.java:61)
+	at io.netty.channel.AbstractChannelHandlerContext$11.run(AbstractChannelHandlerContext.java:732)
+	at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:470)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:569)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	... 1 common frames omitted
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Shutting down MSMQ Status Listeners...
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: status_response_queue
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: error_notification_queue
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: processing_status_queue
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: audit_logs_queue
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - MSMQ Status Listeners shutdown complete
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-09-23 06:16:04 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-09-23 06:16:10 [main] INFO  c.e.msmq.MsmqManagerApplication - Starting MsmqManagerApplication using Java 23.0.1 with PID 37380 (C:\Users\kelvin.chingoma\msmq-manager\target\classes started by kelvin.chingoma in C:\Users\kelvin.chingoma\msmq-manager)
+2025-09-23 06:16:10 [main] INFO  c.e.msmq.MsmqManagerApplication - The following 1 profile is active: "dev"
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 130 ms. Found 5 JPA repository interfaces.
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.EmailConfigurationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MailingListRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageTemplateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqQueueConfigRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:16:11 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 6 ms. Found 0 Redis repository interfaces.
+2025-09-23 06:16:12 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-09-23 06:16:12 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-23 06:16:12 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-09-23 06:16:12 [main] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2025-09-23 06:16:12 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2173 ms
+2025-09-23 06:16:12 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-09-23 06:16:13 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@63d0e8d
+2025-09-23 06:16:13 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-09-23 06:16:13 [main] INFO  o.f.c.i.license.VersionPrinter - Flyway Community Edition 9.22.3 by Redgate
+2025-09-23 06:16:13 [main] INFO  o.f.c.i.license.VersionPrinter - See release notes here: https://rd.gt/416ObMi
+2025-09-23 06:16:13 [main] INFO  o.f.c.i.license.VersionPrinter - 
+2025-09-23 06:16:13 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/msmq_manager (PostgreSQL 16.4)
+2025-09-23 06:16:13 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.4 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-09-23 06:16:13 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 8 migrations (execution time 00:00.058s)
+2025-09-23 06:16:13 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 8
+2025-09-23 06:16:13 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2025-09-23 06:16:13 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-23 06:16:13 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-09-23 06:16:13 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-09-23 06:16:13 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-09-23 06:16:13 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-09-23 06:16:14 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-09-23 06:16:14 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-09-23 06:16:15 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-09-23 06:16:16 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ connection manager using type: POWERSHELL
+2025-09-23 06:16:16 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ queue manager using type: POWERSHELL
+2025-09-23 06:16:16 [main] INFO  c.e.m.s.MsmqStatusListenerService - Initializing MSMQ Status Listeners...
+2025-09-23 06:16:16 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: status_response_queue
+2025-09-23 06:16:16 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: error_notification_queue
+2025-09-23 06:16:16 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: processing_status_queue
+2025-09-23 06:16:16 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: audit_logs_queue
+2025-09-23 06:16:16 [main] INFO  c.e.m.s.MsmqStatusListenerService - MSMQ Status Listeners initialized successfully
+2025-09-23 06:16:16 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-09-23 06:16:17 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-09-23 06:16:17 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@7271ee48, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@30906ad3, org.springframework.security.web.context.SecurityContextHolderFilter@74e3836a, org.springframework.security.web.header.HeaderWriterFilter@40904969, org.springframework.web.filter.CorsFilter@10378c35, org.springframework.security.web.authentication.logout.LogoutFilter@21084cbe, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@33be99c1, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@24d642eb, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@39a9b3ee, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@480e8a7a, org.springframework.security.web.access.ExceptionTranslationFilter@7dc97564, org.springframework.security.web.access.intercept.AuthorizationFilter@3ff4ed56]
+2025-09-23 06:16:18 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path '/api'
+2025-09-23 06:16:18 [main] INFO  c.e.msmq.MsmqManagerApplication - Started MsmqManagerApplication in 8.492 seconds (process running for 9.864)
+2025-09-23 06:16:18 [main] INFO  c.e.msmq.config.MsmqStartupConfig - 🚀 Application is ready, starting initialization sequence...
+2025-09-23 06:16:18 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 06:16:18 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 06:16:18 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 06:16:18 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 06:16:19 [RMI TCP Connection(4)-10.81.234.4] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-23 06:16:19 [RMI TCP Connection(4)-10.81.234.4] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-09-23 06:16:19 [RMI TCP Connection(4)-10.81.234.4] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 5 ms
+2025-09-23 06:16:19 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 06:16:20 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:16:20 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 1892ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:16:20 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Step 1: Initializing default configurations...
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - 🚀 Starting default configuration initialization...
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Initializing default email configuration...
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Default email configuration already exists, skipping initialization
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Initializing default mailing list...
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Default mailing list 'System Administrators' already exists, skipping initialization
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - ✅ Default configuration initialization completed successfully
+2025-09-23 06:16:20 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Step 2: Starting MSMQ queue synchronization...
+2025-09-23 06:16:20 [main] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 06:16:20 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 06:16:20 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 06:16:20 [main] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:16:20 [main] INFO  c.e.msmq.config.MsmqStartupConfig - ✅ MSMQ startup initialization completed successfully
+2025-09-23 06:16:20 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Queue synchronization: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:16:20 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Default email config exists: true
+2025-09-23 06:16:20 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Default mailing list exists: true (System Administrators)
+2025-09-23 06:16:20 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 🚀 Starting MSMQ Integration Tests (delay: 5000ms)...
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ All MSMQ Integration Tests completed successfully!
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Creating Securities Settlement template...
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ℹ️ Securities Settlement template already exists, skipping creation
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - 🧪 Starting securities settlement test...
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - 📋 Test settlement request created:
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Security: CRDB
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Quantity: 77
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Queue: crdb_to_dse
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.SecuritiesSettlementService - Starting paired settlement for security: TZ1996100214 with quantity: 77
+2025-09-23 06:16:25 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Sending message to remote queue via PowerShell using TCP: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 06:16:26 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to remote queue via PowerShell: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 06:16:26 [main] INFO  c.e.m.service.MessageStatusService - Message stored successfully: ID=29, TransactionID=2509238DC5F2A, CommonRef=3SAJSIGML
+2025-09-23 06:16:26 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SECURITIES_SETTLEMENT to queue: crdb_to_dse
+2025-09-23 06:16:26 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ RECE message sent successfully. Transaction ID: 2509238DC5F2A
+2025-09-23 06:16:26 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Sending message to remote queue via PowerShell using TCP: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 06:16:27 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to remote queue via PowerShell: TCP:192.168.2.170\private$\crdb_to_dse
+2025-09-23 06:16:27 [main] INFO  c.e.m.service.MessageStatusService - Message stored successfully: ID=30, TransactionID=2509238DC5F2B, CommonRef=3SAJSIGML
+2025-09-23 06:16:27 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SECURITIES_SETTLEMENT to queue: crdb_to_dse
+2025-09-23 06:16:27 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ DELI message sent successfully. Transaction ID: 2509238DC5F2B
+2025-09-23 06:16:27 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ Paired settlement completed successfully. RECE: 2509238DC5F2A, DELI: 2509238DC5F2B
+2025-09-23 06:16:27 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - ✅ [Remotely] Securities settlement test completed successfully!
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Shutting down MSMQ Status Listeners...
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: status_response_queue
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: error_notification_queue
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: processing_status_queue
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - Stopping listener for queue: audit_logs_queue
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  c.e.m.s.MsmqStatusListenerService - MSMQ Status Listeners shutdown complete
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-09-23 06:17:49 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-09-23 06:17:53 [main] INFO  c.e.msmq.MsmqManagerApplication - Starting MsmqManagerApplication using Java 23.0.1 with PID 39140 (C:\Users\kelvin.chingoma\msmq-manager\target\classes started by kelvin.chingoma in C:\Users\kelvin.chingoma\msmq-manager)
+2025-09-23 06:17:53 [main] INFO  c.e.msmq.MsmqManagerApplication - The following 1 profile is active: "dev"
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 144 ms. Found 5 JPA repository interfaces.
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.EmailConfigurationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MailingListRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqMessageTemplateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.enterprise.msmq.repository.MsmqQueueConfigRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2025-09-23 06:17:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 7 ms. Found 0 Redis repository interfaces.
+2025-09-23 06:17:55 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-09-23 06:17:55 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-09-23 06:17:55 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-09-23 06:17:55 [main] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2025-09-23 06:17:55 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2425 ms
+2025-09-23 06:17:56 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-09-23 06:17:56 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@6a9df5
+2025-09-23 06:17:56 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-09-23 06:17:56 [main] INFO  o.f.c.i.license.VersionPrinter - Flyway Community Edition 9.22.3 by Redgate
+2025-09-23 06:17:56 [main] INFO  o.f.c.i.license.VersionPrinter - See release notes here: https://rd.gt/416ObMi
+2025-09-23 06:17:56 [main] INFO  o.f.c.i.license.VersionPrinter - 
+2025-09-23 06:17:56 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/msmq_manager (PostgreSQL 16.4)
+2025-09-23 06:17:56 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.4 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-09-23 06:17:56 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 8 migrations (execution time 00:00.055s)
+2025-09-23 06:17:56 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 8
+2025-09-23 06:17:56 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2025-09-23 06:17:56 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-09-23 06:17:56 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-09-23 06:17:56 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-09-23 06:17:57 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-09-23 06:17:57 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-09-23 06:17:58 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-09-23 06:17:58 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-09-23 06:17:58 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-09-23 06:17:59 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ connection manager using type: POWERSHELL
+2025-09-23 06:17:59 [main] INFO  c.e.msmq.service.MsmqService - Initialized MSMQ queue manager using type: POWERSHELL
+2025-09-23 06:17:59 [main] INFO  c.e.m.s.MsmqStatusListenerService - Initializing MSMQ Status Listeners...
+2025-09-23 06:17:59 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: status_response_queue
+2025-09-23 06:17:59 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: error_notification_queue
+2025-09-23 06:17:59 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: processing_status_queue
+2025-09-23 06:17:59 [main] INFO  c.e.m.s.MsmqStatusListenerService - Starting listener for queue: audit_logs_queue
+2025-09-23 06:17:59 [main] INFO  c.e.m.s.MsmqStatusListenerService - MSMQ Status Listeners initialized successfully
+2025-09-23 06:17:59 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-09-23 06:18:00 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-09-23 06:18:00 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@1fee651f, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@59e890c6, org.springframework.security.web.context.SecurityContextHolderFilter@23ebd596, org.springframework.security.web.header.HeaderWriterFilter@3767973, org.springframework.web.filter.CorsFilter@73d4aa54, org.springframework.security.web.authentication.logout.LogoutFilter@54dfdad7, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@4eb168a1, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@4260de0d, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@2ee6196f, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@10efe4ca, org.springframework.security.web.access.ExceptionTranslationFilter@28391cc6, org.springframework.security.web.access.intercept.AuthorizationFilter@3be23894]
+2025-09-23 06:18:01 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path '/api'
+2025-09-23 06:18:01 [main] INFO  c.e.msmq.MsmqManagerApplication - Started MsmqManagerApplication in 8.587 seconds (process running for 9.858)
+2025-09-23 06:18:01 [main] INFO  c.e.msmq.config.MsmqStartupConfig - 🚀 Application is ready, starting initialization sequence...
+2025-09-23 06:18:01 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 06:18:01 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 06:18:01 [scheduling-1] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 06:18:01 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 06:18:01 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 06:18:01 [scheduling-1] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:18:01 [scheduling-1] INFO  c.e.m.s.ScheduledQueueSyncService - Scheduled queue sync completed in 195ms: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:18:01 [RMI TCP Connection(2)-10.81.234.4] INFO  o.a.c.c.C.[.[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-09-23 06:18:01 [RMI TCP Connection(2)-10.81.234.4] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-09-23 06:18:01 [RMI TCP Connection(2)-10.81.234.4] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2025-09-23 06:18:03 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Step 1: Initializing default configurations...
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - 🚀 Starting default configuration initialization...
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Initializing default email configuration...
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Default email configuration already exists, skipping initialization
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Initializing default mailing list...
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - Default mailing list 'System Administrators' already exists, skipping initialization
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.DefaultConfigurationInitializerService - ✅ Default configuration initialization completed successfully
+2025-09-23 06:18:03 [main] INFO  c.e.msmq.config.MsmqStartupConfig - Step 2: Starting MSMQ queue synchronization...
+2025-09-23 06:18:03 [main] INFO  c.e.m.service.MsmqQueueSyncService - Starting MSMQ queue synchronization...
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Fetching all queues from database (including inactive)
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully fetched 2 queues from database
+2025-09-23 06:18:03 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 queues in MSMQ system
+2025-09-23 06:18:03 [main] INFO  c.e.m.service.MsmqQueueSyncService - Found 2 existing queue configurations in database
+2025-09-23 06:18:03 [main] INFO  c.e.m.service.MsmqQueueSyncService - Queue synchronization completed: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:18:03 [main] INFO  c.e.msmq.config.MsmqStartupConfig - ✅ MSMQ startup initialization completed successfully
+2025-09-23 06:18:03 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Queue synchronization: Sync completed: 2 total, 0 created, 2 updated, 0 deleted
+2025-09-23 06:18:03 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Default email config exists: true
+2025-09-23 06:18:03 [main] INFO  c.e.msmq.config.MsmqStartupConfig -    - Default mailing list exists: true (System Administrators)
+2025-09-23 06:18:03 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 🚀 Starting MSMQ Integration Tests (delay: 5000ms)...
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ✅ All MSMQ Integration Tests completed successfully!
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.MsmqIntegrationTestService - 📋 Creating Securities Settlement template...
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.MsmqIntegrationTestService - ℹ️ Securities Settlement template already exists, skipping creation
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - 🧪 Starting securities settlement test...
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - 📋 Test settlement request created:
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Security: CRDB
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Quantity: 77
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.SecuritiesSettlementTestService -    Queue: crdb_to_dse
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.SecuritiesSettlementService - Starting paired settlement for security: TZ1996100214 with quantity: 77
+2025-09-23 06:18:08 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Sending message to remote queue via PowerShell using TCP: TCP:127.0.0.1\private$\crdb_to_dse
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to remote queue via PowerShell: TCP:127.0.0.1\private$\crdb_to_dse
+2025-09-23 06:18:09 [main] INFO  c.e.m.service.MessageStatusService - Message stored successfully: ID=31, TransactionID=250923FA8ACFA, CommonRef=1RK15GJ9U
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SECURITIES_SETTLEMENT to queue: crdb_to_dse
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ RECE message sent successfully. Transaction ID: 250923FA8ACFA
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Sending message to remote queue via PowerShell using TCP: TCP:127.0.0.1\private$\crdb_to_dse
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.PowerShellMsmqQueueManager - Successfully sent message to remote queue via PowerShell: TCP:127.0.0.1\private$\crdb_to_dse
+2025-09-23 06:18:09 [main] INFO  c.e.m.service.MessageStatusService - Message stored successfully: ID=32, TransactionID=250923FA8ACFB, CommonRef=1RK15GJ9U
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.MsmqMessageTemplateService - Successfully sent message using template: SWIFT_SECURITIES_SETTLEMENT to queue: crdb_to_dse
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ DELI message sent successfully. Transaction ID: 250923FA8ACFB
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.SecuritiesSettlementService - ✅ Paired settlement completed successfully. RECE: 250923FA8ACFA, DELI: 250923FA8ACFB
+2025-09-23 06:18:09 [main] INFO  c.e.m.s.SecuritiesSettlementTestService - ✅ [Remotely] Securities settlement test completed successfully!

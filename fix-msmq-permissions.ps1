@@ -4,7 +4,10 @@
 Write-Host "MSMQ Permission Diagnostic and Fix Script" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Green
 
-$remoteHost = "192.168.2.170"
+$remoteHost = $env:MSMQ_REMOTE_SERVER
+if (-not $remoteHost) {
+    $remoteHost = "192.168.2.170"  # Default fallback
+}
 
 # 1. Check local MSMQ service status
 Write-Host "`n1. Checking local MSMQ service..." -ForegroundColor Yellow
