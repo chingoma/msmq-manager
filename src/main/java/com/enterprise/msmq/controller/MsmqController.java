@@ -9,6 +9,7 @@ import com.enterprise.msmq.enums.QueueDirection;
 import com.enterprise.msmq.enums.QueuePurpose;
 import com.enterprise.msmq.enums.ResponseCode;
 import com.enterprise.msmq.exception.MsmqException;
+import com.enterprise.msmq.service.MessageStatusService;
 import com.enterprise.msmq.service.contracts.IMsmqService;
 import com.enterprise.msmq.service.MsmqService;
 import com.enterprise.msmq.service.MsmqMessageTemplateService;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * REST Controller for MSMQ operations.
@@ -56,14 +58,17 @@ public class MsmqController {
     private static final Logger logger = LoggerFactory.getLogger(MsmqController.class);
 
     private final IMsmqService IMsmqService;
+    private final MessageStatusService messageStatusService;
 
     /**
      * Constructor for dependency injection.
      * 
      * @param IMsmqService the MSMQ service
+     * @param messageStatusService the message status service
      */
-    public MsmqController(IMsmqService IMsmqService) {
+    public MsmqController(IMsmqService IMsmqService, MessageStatusService messageStatusService) {
         this.IMsmqService = IMsmqService;
+        this.messageStatusService = messageStatusService;
     }
 
     // Queue Management Endpoints
@@ -533,6 +538,23 @@ public class MsmqController {
             MsmqMessage message = mapToLegacyMessage(request);
             MsmqMessage sentMessage = IMsmqService.sendMessage(queueName, message, environment);
             
+            // Store message in database for tracking
+            if (sentMessage != null) {
+                com.enterprise.msmq.entity.MsmqMessage entityMessage = com.enterprise.msmq.entity.MsmqMessage.builder()
+                        .messageId(UUID.randomUUID().toString())
+                        .queueName(queueName)
+                        .correlationId(sentMessage.getCorrelationId())
+                        .label(sentMessage.getLabel())
+                        .body(sentMessage.getBody())
+                        .priority(sentMessage.getPriority())
+                        .messageSize((long) sentMessage.getBody().getBytes().length)
+                        .environment(environment)
+                        .movementType("GENERAL") // Default for basic messages
+                        .build();
+                messageStatusService.storeMessage(entityMessage);
+                logger.info("Message stored in database for tracking: {}", entityMessage.getMessageId());
+            }
+            
             // TODO: Map the legacy response to MessageResponse
             MessageResponse messageResponse = mapToMessageResponse(sentMessage, queueName);
             
@@ -617,6 +639,23 @@ public class MsmqController {
             // Use the new sendMessage method with environment support
             MsmqMessage sentMessage = IMsmqService.sendMessage(queueName, message, "remote");
             
+            // Store message in database for tracking
+            if (sentMessage != null) {
+                com.enterprise.msmq.entity.MsmqMessage entityMessage = com.enterprise.msmq.entity.MsmqMessage.builder()
+                        .messageId(UUID.randomUUID().toString())
+                        .queueName(queueName)
+                        .correlationId(sentMessage.getCorrelationId())
+                        .label(sentMessage.getLabel())
+                        .body(sentMessage.getBody())
+                        .priority(sentMessage.getPriority())
+                        .messageSize((long) sentMessage.getBody().getBytes().length)
+                        .environment("remote")
+                        .movementType("GENERAL") // Default for basic messages
+                        .build();
+                messageStatusService.storeMessage(entityMessage);
+                logger.info("Remote message stored in database for tracking: {}", entityMessage.getMessageId());
+            }
+            
             // Map to response
             MessageResponse messageResponse = mapToMessageResponse(sentMessage, queueName);
             
@@ -660,6 +699,28 @@ public class MsmqController {
                 receivedMessage = IMsmqService.receiveMessage(queueName, timeout);
             } else {
                 receivedMessage = IMsmqService.receiveMessage(queueName);
+            }
+            
+            // Update message status in database if message was received
+            if (receivedMessage.isPresent()) {
+                MsmqMessage message = receivedMessage.get();
+                if (message.getCorrelationId() != null) {
+                    // Try to find and update the message in database
+                    try {
+                        Optional<com.enterprise.msmq.entity.MsmqMessage> dbMessage = 
+                            messageStatusService.getMessageByTransactionId(message.getCorrelationId());
+                        if (dbMessage.isPresent()) {
+                            messageStatusService.updateMessageStatus(
+                                message.getCorrelationId(), 
+                                "RECEIVED", 
+                                null
+                            );
+                            logger.info("Updated message status to RECEIVED for correlation ID: {}", message.getCorrelationId());
+                        }
+                    } catch (Exception e) {
+                        logger.warn("Could not update message status in database: {}", e.getMessage());
+                    }
+                }
             }
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
@@ -707,6 +768,28 @@ public class MsmqController {
                 peekedMessage = IMsmqService.peekMessage(queueName, timeout);
             } else {
                 peekedMessage = IMsmqService.peekMessage(queueName);
+            }
+            
+            // Update message status in database if message was peeked
+            if (peekedMessage.isPresent()) {
+                MsmqMessage message = peekedMessage.get();
+                if (message.getCorrelationId() != null) {
+                    // Try to find and update the message in database
+                    try {
+                        Optional<com.enterprise.msmq.entity.MsmqMessage> dbMessage = 
+                            messageStatusService.getMessageByTransactionId(message.getCorrelationId());
+                        if (dbMessage.isPresent()) {
+                            messageStatusService.updateMessageStatus(
+                                message.getCorrelationId(), 
+                                "PEEKED", 
+                                null
+                            );
+                            logger.info("Updated message status to PEEKED for correlation ID: {}", message.getCorrelationId());
+                        }
+                    } catch (Exception e) {
+                        logger.warn("Could not update message status in database: {}", e.getMessage());
+                    }
+                }
             }
             
             ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
@@ -1099,6 +1182,229 @@ public class MsmqController {
         } catch (Exception e) {
             logger.error("Unexpected error getting available purposes with request ID: {}", requestId, e);
             ApiResponse<List<String>> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Internal server error");
+            response.setRequestId(requestId);
+            return ResponseEntity.ok(response);
+        }
+    }
+    
+    // =====================================================
+    // Message Status Tracking Endpoints
+    // =====================================================
+    
+    /**
+     * Maps entity MsmqMessage to DTO MsmqMessage.
+     */
+    private MsmqMessage mapEntityToDto(com.enterprise.msmq.entity.MsmqMessage entity) {
+        MsmqMessage dto = new MsmqMessage();
+        dto.setMessageId(entity.getMessageId());
+        dto.setBody(entity.getBody());
+        dto.setLabel(entity.getLabel());
+        dto.setPriority(entity.getPriority());
+        dto.setCorrelationId(entity.getCorrelationId());
+        dto.setCreatedTime(entity.getCreatedAt());
+        dto.setSentTime(entity.getSentAt());
+        dto.setReceivedTime(entity.getReceivedAt());
+        dto.setSize(entity.getMessageSize());
+        dto.setStatus(entity.getProcessingStatus());
+        dto.setErrorMessage(entity.getErrorMessage());
+        dto.setProperties(entity.getAdditionalProperties());
+        return dto;
+    }
+    
+    /**
+     * Gets message status by common reference ID (for paired RECE/DELI messages).
+     * 
+     * @param commonReferenceId the common reference ID linking paired messages
+     * @return list of messages with the specified common reference ID
+     */
+    @GetMapping("/messages/status/{commonReferenceId}")
+    public ResponseEntity<ApiResponse<List<MsmqMessage>>> getMessageStatusByCommonReferenceId(
+            @PathVariable @NotBlank String commonReferenceId) {
+        long startTime = System.currentTimeMillis();
+        String requestId = RequestIdGenerator.generateRequestId();
+        
+        try {
+            logger.info("Getting message status for common reference ID: {} with request ID: {}", commonReferenceId, requestId);
+            
+            List<com.enterprise.msmq.entity.MsmqMessage> entityMessages = messageStatusService.getMessagesByCommonReferenceId(commonReferenceId);
+            List<MsmqMessage> messages = entityMessages.stream()
+                    .map(this::mapEntityToDto)
+                    .toList();
+            
+            ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
+            ApiResponse<List<MsmqMessage>> response = ApiResponse.success(
+                "Message status retrieved successfully for common reference ID: " + commonReferenceId, messages);
+            response.setRequestId(requestId);
+            response.setMetadata(metadata);
+            
+            logger.info("Retrieved {} messages for common reference ID: {} with request ID: {}", 
+                       messages.size(), commonReferenceId, requestId);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Unexpected error getting message status for common reference ID: {} with request ID: {}", 
+                        commonReferenceId, requestId, e);
+            ApiResponse<List<MsmqMessage>> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Internal server error");
+            response.setRequestId(requestId);
+            return ResponseEntity.ok(response);
+        }
+    }
+    
+    /**
+     * Gets paired messages (RECE and DELI) by common reference ID.
+     * 
+     * @param commonReferenceId the common reference ID linking paired messages
+     * @return list of paired messages
+     */
+    @GetMapping("/messages/paired/{commonReferenceId}")
+    public ResponseEntity<ApiResponse<List<MsmqMessage>>> getPairedMessages(
+            @PathVariable @NotBlank String commonReferenceId) {
+        long startTime = System.currentTimeMillis();
+        String requestId = RequestIdGenerator.generateRequestId();
+        
+        try {
+            logger.info("Getting paired messages for common reference ID: {} with request ID: {}", commonReferenceId, requestId);
+            
+            List<com.enterprise.msmq.entity.MsmqMessage> entityMessages = messageStatusService.getPairedMessages(commonReferenceId);
+            List<MsmqMessage> messages = entityMessages.stream()
+                    .map(this::mapEntityToDto)
+                    .toList();
+            
+            ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
+            ApiResponse<List<MsmqMessage>> response = ApiResponse.success(
+                "Paired messages retrieved successfully for common reference ID: " + commonReferenceId, messages);
+            response.setRequestId(requestId);
+            response.setMetadata(metadata);
+            
+            logger.info("Retrieved {} paired messages for common reference ID: {} with request ID: {}", 
+                       messages.size(), commonReferenceId, requestId);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Unexpected error getting paired messages for common reference ID: {} with request ID: {}", 
+                        commonReferenceId, requestId, e);
+            ApiResponse<List<MsmqMessage>> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Internal server error");
+            response.setRequestId(requestId);
+            return ResponseEntity.ok(response);
+        }
+    }
+    
+    /**
+     * Gets message by transaction ID.
+     * 
+     * @param transactionId the transaction ID
+     * @return the message with the specified transaction ID
+     */
+    @GetMapping("/messages/transaction/{transactionId}")
+    public ResponseEntity<ApiResponse<MsmqMessage>> getMessageByTransactionId(
+            @PathVariable @NotBlank String transactionId) {
+        long startTime = System.currentTimeMillis();
+        String requestId = RequestIdGenerator.generateRequestId();
+        
+        try {
+            logger.info("Getting message by transaction ID: {} with request ID: {}", transactionId, requestId);
+            
+            Optional<com.enterprise.msmq.entity.MsmqMessage> messageOpt = messageStatusService.getMessageByTransactionId(transactionId);
+            
+            ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
+            ApiResponse<MsmqMessage> response;
+            
+            if (messageOpt.isPresent()) {
+                MsmqMessage dto = mapEntityToDto(messageOpt.get());
+                response = ApiResponse.success("Message retrieved successfully", dto);
+            } else {
+                response = ApiResponse.error(ResponseCode.VALIDATION_ERROR, "Message not found with transaction ID: " + transactionId);
+            }
+            
+            response.setRequestId(requestId);
+            response.setMetadata(metadata);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Unexpected error getting message by transaction ID: {} with request ID: {}", 
+                        transactionId, requestId, e);
+            ApiResponse<MsmqMessage> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Internal server error");
+            response.setRequestId(requestId);
+            return ResponseEntity.ok(response);
+        }
+    }
+    
+    /**
+     * Updates message status by transaction ID.
+     * 
+     * @param transactionId the transaction ID
+     * @param status the new status
+     * @param errorMessage optional error message
+     * @return success response
+     */
+    @PutMapping("/messages/status/{transactionId}")
+    public ResponseEntity<ApiResponse<Void>> updateMessageStatus(
+            @PathVariable @NotBlank String transactionId,
+            @RequestParam @NotBlank String status,
+            @RequestParam(required = false) String errorMessage) {
+        long startTime = System.currentTimeMillis();
+        String requestId = RequestIdGenerator.generateRequestId();
+        
+        try {
+            logger.info("Updating message status for transaction ID: {} to status: {} with request ID: {}", 
+                       transactionId, status, requestId);
+            
+            messageStatusService.updateMessageStatus(transactionId, status, errorMessage);
+            
+            ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
+            ApiResponse<Void> response = ApiResponse.success("Message status updated successfully");
+            response.setRequestId(requestId);
+            response.setMetadata(metadata);
+            
+            logger.info("Message status updated successfully for transaction ID: {} with request ID: {}", 
+                       transactionId, requestId);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Unexpected error updating message status for transaction ID: {} with request ID: {}", 
+                        transactionId, requestId, e);
+            ApiResponse<Void> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Internal server error");
+            response.setRequestId(requestId);
+            return ResponseEntity.ok(response);
+        }
+    }
+    
+    /**
+     * Updates paired message status by common reference ID.
+     * 
+     * @param commonReferenceId the common reference ID
+     * @param status the new status
+     * @param errorMessage optional error message
+     * @return success response
+     */
+    @PutMapping("/messages/paired/status/{commonReferenceId}")
+    public ResponseEntity<ApiResponse<Void>> updatePairedMessageStatus(
+            @PathVariable @NotBlank String commonReferenceId,
+            @RequestParam @NotBlank String status,
+            @RequestParam(required = false) String errorMessage) {
+        long startTime = System.currentTimeMillis();
+        String requestId = RequestIdGenerator.generateRequestId();
+        
+        try {
+            logger.info("Updating paired message status for common reference ID: {} to status: {} with request ID: {}", 
+                       commonReferenceId, status, requestId);
+            
+            messageStatusService.updatePairedMessageStatus(commonReferenceId, status, errorMessage);
+            
+            ResponseMetadata metadata = new ResponseMetadata(System.currentTimeMillis() - startTime);
+            ApiResponse<Void> response = ApiResponse.success("Paired message status updated successfully");
+            response.setRequestId(requestId);
+            response.setMetadata(metadata);
+            
+            logger.info("Paired message status updated successfully for common reference ID: {} with request ID: {}", 
+                       commonReferenceId, requestId);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Unexpected error updating paired message status for common reference ID: {} with request ID: {}", 
+                        commonReferenceId, requestId, e);
+            ApiResponse<Void> response = ApiResponse.error(ResponseCode.SYSTEM_ERROR, "Internal server error");
             response.setRequestId(requestId);
             return ResponseEntity.ok(response);
         }

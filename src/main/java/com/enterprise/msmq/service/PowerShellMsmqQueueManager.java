@@ -1,7 +1,10 @@
 package com.enterprise.msmq.service;
 
+import com.enterprise.msmq.config.MsmqRemoteProperties;
 import com.enterprise.msmq.dto.MsmqMessage;
 import com.enterprise.msmq.dto.MsmqQueue;
+import com.enterprise.msmq.model.MsmqQueueConfig;
+import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
 import com.enterprise.msmq.service.contracts.IMsmqQueueManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +37,9 @@ import java.util.UUID;
 @Slf4j
 public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
 
+    private final MsmqRemoteProperties remoteProperties;
+    private final MsmqQueueConfigRepository queueConfigRepository;
+
     /**
      * Creates a new MSMQ queue using PowerShell.
      * Handles process exit codes and logs errors.
@@ -42,7 +48,6 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
     public boolean createQueue(MsmqQueue queue) {
         try {
             String queuePath = queue.getPath() != null ? queue.getPath() : "private$\\" + queue.getName();
-            String queueName = queuePath.replace("private$\\", "");
             String command = "New-MsmqQueue -Name '" + queuePath + "' -QueueType Private -ErrorAction SilentlyContinue";
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
@@ -66,20 +71,17 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
     @Override
     public boolean deleteQueue(String queuePath) {
         try {
-            // For PowerShell MSMQ, we need to get the queue object first, then remove it
             String command = "$queue = Get-MsmqQueue -QueueType Private | Where-Object { $_.QueueName -like '*" + queuePath + "*' } | Select-Object -First 1; if ($queue) { Remove-MsmqQueue -InputObject $queue -ErrorAction SilentlyContinue; if ($?) { Write-Host 'SUCCESS' } else { Write-Host 'FAILED' } } else { Write-Host 'NOT_FOUND' }";
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
             int exitCode = process.waitFor();
-            // Read the output to check for our specific messages
-            String output = "";
+            StringBuilder outputBuilder = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
-                StringBuilder outputBuilder = new StringBuilder();
                 while ((line = reader.readLine()) != null) {
                     outputBuilder.append(line).append("\n");
                 }
-                output = outputBuilder.toString().trim();
             }
+            String output = outputBuilder.toString().trim();
             if (exitCode == 0) {
                 if (output.contains("SUCCESS")) {
                     log.info("Successfully deleted queue via PowerShell: {}", queuePath);
@@ -113,7 +115,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
         try {
             String command = "Get-MsmqQueue -QueueType Private | Where-Object { $_.QueueName -like '*" + queuePath + "*' } | Select-Object -First 1";
             Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
-            int exitCode = process.waitFor();
+            process.waitFor();
             // Read output to see if queue exists
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
@@ -334,7 +336,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
             String errorOutput = errorBuilder.toString().trim();
 
             // Enhanced logging for debugging
-            log.debug("PowerShell command executed: {}", command.substring(0, Math.min(command.length(), 200)) + "...");
+            log.debug("PowerShell command executed: {}...", command.length() > 200 ? command.substring(0, 200) : command);
             log.debug("PowerShell exit code: {}", exitCode);
             log.debug("PowerShell stdout: '{}'", output);
             log.debug("PowerShell stderr: '{}'", errorOutput);
@@ -490,7 +492,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                             messageBody.append(line).append("\n");
                         }
                     }
-                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
+                    if ("SUCCESS".equals(status) && !messageBody.isEmpty()) {
                         MsmqMessage message = new MsmqMessage();
                         message.setMessageId(UUID.randomUUID().toString());
                         message.setBody(messageBody.toString().trim());
@@ -546,9 +548,8 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                             messageBody.append(line).append("\n");
                         }
                     }
-                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
+                    if ("SUCCESS".equals(status) && !messageBody.isEmpty()) {
                         MsmqMessage message = new MsmqMessage();
-                        message.setMessageId(UUID.randomUUID().toString());
                         message.setBody(messageBody.toString().trim());
                         message.setSourceQueue(queuePath);
                         message.setCreatedTime(LocalDateTime.now());
@@ -601,7 +602,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                             messageBody.append(line).append("\n");
                         }
                     }
-                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
+                    if ("SUCCESS".equals(status) && !messageBody.isEmpty()) {
                         MsmqMessage message = new MsmqMessage();
                         message.setMessageId(UUID.randomUUID().toString());
                         message.setBody(messageBody.toString().trim());
@@ -657,7 +658,7 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                             messageBody.append(line).append("\n");
                         }
                     }
-                    if ("SUCCESS".equals(status) && messageBody.length() > 0) {
+                    if ("SUCCESS".equals(status) && !messageBody.isEmpty()) {
                         MsmqMessage message = new MsmqMessage();
                         message.setMessageId(UUID.randomUUID().toString());
                         message.setBody(messageBody.toString().trim());
@@ -714,11 +715,58 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
     }
 
     /**
-     * Gets all available queues using PowerShell.
+     * Gets all available queues from database.
+     * Fetches all queues regardless of active status since queue syncing manages the data.
      * Returns an empty list if none found or error occurs.
      */
     @Override
     public List<MsmqQueue> getAllQueues() {
+        log.debug("Fetching all queues from database");
+        return getAllQueuesFromDatabase();
+    }
+
+    /**
+     * Gets all available queues from database.
+     * Fetches all queues regardless of active status since queue syncing manages the data.
+     * Returns an empty list if none found or error occurs.
+     */
+    private List<MsmqQueue> getAllQueuesFromDatabase() {
+        List<MsmqQueue> queues = new ArrayList<>();
+        try {
+            log.info("Fetching all queues from database (including inactive)");
+            List<MsmqQueueConfig> configs = queueConfigRepository.findAll();
+            
+            for (MsmqQueueConfig config : configs) {
+                MsmqQueue queue = new MsmqQueue();
+                queue.setName(config.getQueueName());
+                queue.setPath(config.getQueuePath());
+                queue.setType(config.getQueueType() != null ? config.getQueueType() : "PRIVATE");
+                queue.setDescription(config.getDescription());
+                
+                // Add status information to description
+                String status = config.getIsActive() ? "ACTIVE" : "INACTIVE";
+                if (queue.getDescription() != null && !queue.getDescription().isEmpty()) {
+                    queue.setDescription(queue.getDescription() + " | Status: " + status);
+                } else {
+                    queue.setDescription("Status: " + status);
+                }
+                
+                queues.add(queue);
+                log.debug("Found queue in database: {} ({}) - {}", config.getQueueName(), config.getQueueType(), status);
+            }
+            
+            log.info("Successfully fetched {} queues from database", queues.size());
+        } catch (Exception e) {
+            log.error("Error fetching queues from database: {}", e.getMessage(), e);
+        }
+        return queues;
+    }
+
+    /**
+     * Gets all available queues from local machine using PowerShell.
+     * Returns an empty list if none found or error occurs.
+     */
+    private List<MsmqQueue> getAllLocalQueues() {
         List<MsmqQueue> queues = new ArrayList<>();
         try {
             String command = "Get-MsmqQueue -QueueType Private | Select-Object QueueName, QueueType, MessageCount";
@@ -743,7 +791,149 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
                 }
             }
         } catch (Exception e) {
-            log.error("Error getting all queues via PowerShell: {}", e.getMessage(), e);
+            log.error("Error getting all local queues via PowerShell: {}", e.getMessage(), e);
+        }
+        return queues;
+    }
+
+    /**
+     * Gets all available queues from a remote MSMQ server using PowerShell.
+     * Uses TCP or OS protocol based on configuration.
+     * Returns an empty list if none found or error occurs.
+     */
+    @Override
+    public List<MsmqQueue> getAllRemoteQueues(String remoteHost) {
+        List<MsmqQueue> queues = new ArrayList<>();
+        try {
+            log.info("Fetching queues from remote MSMQ server: {}", remoteHost);
+            
+            // Log the remote host being used
+            log.debug("Using remote host: {}", remoteHost);
+            
+            // Use PowerShell to get remote queues using FormatName approach
+            // This approach works better with MSMQ security restrictions
+            String queueNamesList = remoteProperties.getQueueNames();
+            String[] queueNames = queueNamesList.split(",");
+            StringBuilder queueArray = new StringBuilder();
+            for (int i = 0; i < queueNames.length; i++) {
+                if (i > 0) queueArray.append(",");
+                queueArray.append("'").append(queueNames[i].trim()).append("'");
+            }
+            
+            String command = "Add-Type -AssemblyName System.Messaging; " +
+                "try { " +
+                "    $queues = @(); " +
+                "    $commonQueues = @(" + queueArray.toString() + "); " +
+                "    foreach ($queueName in $commonQueues) { " +
+                "        try { " +
+                "            $formatName = 'FormatName:DIRECT=TCP:" + remoteHost + "\\private$\\' + $queueName; " +
+                "            $queue = New-Object System.Messaging.MessageQueue $formatName; " +
+                "            $queue.Formatter = New-Object System.Messaging.XmlMessageFormatter([Type[]]@( [System.Xml.XmlDocument] )); " +
+                "            $messageCount = 0; " +
+                "            try { " +
+                "                $messageCount = $queue.GetMessageEnumerator2().Count; " +
+                "            } catch { " +
+                "                $messageCount = 0; " +
+                "            } " +
+                "            Write-Host \"$queueName~$messageCount~PRIVATE\"; " +
+                "            $queue.Close(); " +
+                "        } catch { " +
+                "            # Queue doesn't exist or can't be accessed, skip silently " +
+                "        } " +
+                "    } " +
+                "    Write-Host 'SUCCESS'; " +
+                "} catch { " +
+                "    Write-Host 'FAILED - ' + $_.Exception.Message; " +
+                "}";
+            
+            Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
+            
+            // Capture both standard output and error output
+            StringBuilder outputBuilder = new StringBuilder();
+            StringBuilder errorBuilder = new StringBuilder();
+            
+            // Read standard output in a separate thread
+            Thread outputThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        outputBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading PowerShell output: {}", e.getMessage());
+                }
+            });
+            
+            // Read error output in a separate thread
+            Thread errorThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        errorBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading PowerShell error output: {}", e.getMessage());
+                }
+            });
+            
+            // Start both threads
+            outputThread.start();
+            errorThread.start();
+            
+            int exitCode = process.waitFor();
+            
+            // Wait for both threads to complete
+            outputThread.join();
+            errorThread.join();
+            
+            String output = outputBuilder.toString().trim();
+            String errorOutput = errorBuilder.toString().trim();
+            
+            log.debug("PowerShell command executed for remote queue fetch");
+            log.debug("PowerShell exit code: {}", exitCode);
+            log.debug("PowerShell stdout: '{}'", output);
+            log.debug("PowerShell stderr: '{}'", errorOutput);
+            
+            if (exitCode == 0) {
+                if (output.contains("SUCCESS")) {
+                    // Parse the queue information
+                    String[] lines = output.split("\n");
+                    for (String line : lines) {
+                        if (line.contains("~") && !line.contains("SUCCESS") && !line.contains("FAILED")) {
+                            String[] parts = line.split("~");
+                            if (parts.length >= 3) {
+                                MsmqQueue queue = new MsmqQueue();
+                                queue.setName(parts[0]);
+                                queue.setPath(parts[0]);
+                                queue.setType(parts[2]);
+                                try {
+                                    long messageCount = Long.parseLong(parts[1]);
+                                    queue.setDescription("Message Count: " + messageCount);
+                                } catch (NumberFormatException e) {
+                                    log.warn("Could not parse message count for queue {}: {}", parts[0], parts[1]);
+                                }
+                                queues.add(queue);
+                            }
+                        }
+                    }
+                    log.info("Successfully fetched {} queues from remote server: {}", queues.size(), remoteHost);
+                } else if (output.contains("FAILED")) {
+                    String failureReason = extractFailureReason(output);
+                    log.error("Failed to fetch remote queues from {}: {}", remoteHost, failureReason);
+                } else {
+                    log.warn("Unknown PowerShell output for remote queue fetching: {}", output);
+                }
+            } else {
+                log.error("Failed to fetch remote queues from {}: exit code {}", remoteHost, exitCode);
+                if (!errorOutput.isEmpty()) {
+                    log.error("PowerShell error output: {}", errorOutput);
+                }
+                if (!output.isEmpty()) {
+                    log.error("PowerShell standard output: {}", output);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error fetching remote queues from {}: {}", remoteHost, e.getMessage(), e);
         }
         return queues;
     }

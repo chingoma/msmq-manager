@@ -69,25 +69,6 @@ CREATE INDEX idx_email_configs_smtp_host ON email_configurations(smtp_host);
 CREATE INDEX idx_mailing_lists_active ON mailing_lists(is_active);
 CREATE INDEX idx_mailing_list_recipients_email ON mailing_list_recipients(email_address);
 
--- Insert default email configuration (Gmail example)
-INSERT INTO email_configurations (
-    config_name, smtp_host, smtp_port, username, password, 
-    from_email, from_name, use_tls, use_ssl, is_default, 
-    created_by, updated_by
-) VALUES (
-    'Default Gmail', 'smtp.gmail.com', 587, 'your-email@gmail.com', 'your-app-password',
-    'your-email@gmail.com', 'MSMQ Monitoring System', true, false, true,
-    'SYSTEM', 'SYSTEM'
-);
-
--- Insert default mailing list for all alerts
-INSERT INTO mailing_lists (list_name, description, created_by, updated_by) 
-VALUES ('System Administrators', 'Default mailing list for all system alerts', 'SYSTEM', 'SYSTEM');
-
--- Insert admin email to default mailing list
-INSERT INTO mailing_list_recipients (mailing_list_id, email_address) 
-VALUES (1, 'admin@yourcompany.com');
-
 -- Add comment to tables
 COMMENT ON TABLE email_configurations IS 'Stores SMTP configuration for sending email notifications';
 COMMENT ON TABLE mailing_lists IS 'Stores mailing list definitions for alert notifications';

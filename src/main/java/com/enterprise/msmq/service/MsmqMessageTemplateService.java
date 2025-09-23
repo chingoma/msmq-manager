@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.StringWriter;
@@ -37,6 +38,7 @@ public class MsmqMessageTemplateService {
 
     private final MsmqMessageTemplateRepository templateRepository;
     private final MsmqQueueManagerFactory queueManagerFactory;
+    private final MessageStatusService messageStatusService;
 
     /**
      * Create a new message template.
@@ -117,6 +119,89 @@ public class MsmqMessageTemplateService {
     }
 
     /**
+     * Send message using template and parameters with tracking information.
+     */
+    public boolean sendMessageUsingTemplate(String templateName, String queueName, Map<String, String> parameters, String environment, Integer priority, String correlationId, String transactionId, String movementType, String linkedTransactionId) {
+        MsmqMessageTemplate template = templateRepository.findByTemplateName(templateName)
+            .orElseThrow(() -> new IllegalArgumentException("Template not found: " + templateName));
+        
+        if (!template.getIsActive()) {
+            throw new IllegalArgumentException("Template is not active: " + templateName);
+        }
+        
+        // Merge template with parameters
+        String mergedContent = mergeTemplateWithParameters(template.getTemplateContent(), parameters);
+        // Focus on proper XML prettification
+        String prettyXml = prettyFormatXml(mergedContent);
+        // Create MsmqMessage object
+        MsmqMessage message = new MsmqMessage();
+        message.setBody(prettyXml);
+        message.setPriority(priority != null ? priority : 1);
+        message.setCorrelationId(correlationId);
+        message.setLabel("Template Message: " + templateName);
+        
+        // Send message to MSMQ
+        try {
+            IMsmqQueueManager queueManager = queueManagerFactory.createQueueManager();
+            boolean messageSent;
+
+            if(environment != null) {
+                if(environment.equalsIgnoreCase("remote")) {
+                    // For remote, check if queueName is already a FormatName path
+                    if (queueName.toUpperCase().startsWith("FORMATNAME:")) {
+                        messageSent = queueManager.sendMessageToRemote(queueName, message);
+                    } else {
+                        // Use two-parameter method for simple queue names
+                        messageSent = queueManager.sendMessageToRemote("192.168.2.170", queueName, message);
+                    }
+                } else if(environment.equalsIgnoreCase("local")) {
+                    messageSent = queueManager.sendMessage(queueName, message);
+                } else {
+                    throw new IllegalArgumentException("Invalid environment: " + environment);
+                }
+            } else {
+                // Default to remote if environment not specified
+                // Check if queueName is already a FormatName path
+                if (queueName.toUpperCase().startsWith("FORMATNAME:")) {
+                    messageSent = queueManager.sendMessageToRemote(queueName, message);
+                } else {
+                    // Use two-parameter method for simple queue names
+                    messageSent = queueManager.sendMessageToRemote("192.168.2.170", queueName, message);
+                }
+            }
+
+            if (messageSent) {
+                // Store message in database for status tracking with full tracking info
+                com.enterprise.msmq.entity.MsmqMessage entityMessage = com.enterprise.msmq.entity.MsmqMessage.builder()
+                        .messageId(UUID.randomUUID().toString())
+                        .queueName(queueName)
+                        .correlationId(correlationId)
+                        .label(message.getLabel())
+                        .body(message.getBody())
+                        .priority(message.getPriority())
+                        .messageSize((long) message.getBody().getBytes().length)
+                        .environment(environment)
+                        .templateName(templateName)
+                        .commonReferenceId(correlationId)  // Set common reference ID
+                        .transactionId(transactionId)
+                        .movementType(movementType)
+                        .linkedTransactionId(linkedTransactionId)
+                        .build();
+                messageStatusService.storeMessage(entityMessage);
+                
+                logger.info("Successfully sent message using template: {} to queue: {}", templateName, queueName);
+                return true;
+            } else {
+                logger.error("Failed to send message using template: {} to queue: {}", templateName, queueName);
+                return false;
+            }
+        } catch (Exception e) {
+            logger.error("Failed to send message using template: {} to queue: {}", templateName, queueName, e);
+            return false;
+        }
+    }
+
+    /**
      * Send message using template and parameters.
      */
     public boolean sendMessageUsingTemplate(String templateName, String queueName, Map<String, String> parameters, String environment, Integer priority, String correlationId) {
@@ -169,6 +254,20 @@ public class MsmqMessageTemplateService {
             }
 
             if (messageSent) {
+                // Store message in database for status tracking
+                com.enterprise.msmq.entity.MsmqMessage entityMessage = com.enterprise.msmq.entity.MsmqMessage.builder()
+                        .messageId(UUID.randomUUID().toString())
+                        .queueName(queueName)
+                        .correlationId(message.getCorrelationId())
+                        .label(message.getLabel())
+                        .body(message.getBody())
+                        .priority(message.getPriority())
+                        .messageSize((long) message.getBody().getBytes().length)
+                        .environment(environment)
+                        .templateName(templateName)
+                        .build();
+                messageStatusService.storeMessage(entityMessage);
+                
                 logger.info("Successfully sent message using template: {} to queue: {}", templateName, queueName);
                 return true;
             } else {

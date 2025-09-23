@@ -2,8 +2,10 @@ package com.enterprise.msmq.service;
 
 import com.enterprise.msmq.dto.request.SecuritiesSettlementRequest;
 import com.enterprise.msmq.dto.response.SecuritiesSettlementResponse;
+import com.enterprise.msmq.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -23,26 +25,31 @@ public class SecuritiesSettlementTestService {
 
     private final SecuritiesSettlementService settlementService;
 
+    @Value("${msmq.integration.tests.enabled:true}")
+    private boolean integrationTestsEnabled;
+
     /**
      * Runs a test securities settlement when the application starts.
      * This demonstrates the paired RECE and DELI message generation.
      */
-//    @EventListener(ApplicationReadyEvent.class)
+    @EventListener(ApplicationReadyEvent.class)
     public void testSecuritiesSettlement() {
         try {
+
+            if (!integrationTestsEnabled) {
+                log.info("🚫 MSMQ Integration Tests are disabled in configuration");
+                return;
+            }
+
             log.info("🧪 Starting securities settlement test...");
 
             // Create a test settlement request
             SecuritiesSettlementRequest request = SecuritiesSettlementRequest.builder()
                 .securityName("CRDB")
-                .quantity(10)
+                .quantity(77)
                 .sellerAccountId("639535")
                 .buyerAccountId("575883")
-                .sellerName("John Doe")
-                .buyerName("Jane Smith")
-                .tradeDate("2025-08-29")
-                .settlementDate("2025-09-03")
-                .queueName("FormatName:DIRECT=TCP:192.168.2.170\\private$\\crdb_to_dse")  // Fixed FormatName format
+                .queueName("crdb_to_dse")  // Fixed FormatName format
                 .buyerBrokerBic("B05/B")
                 .buyerCustodianBic("B05/C")
                 .sellerBrokerBic("B02/B")
@@ -53,8 +60,6 @@ public class SecuritiesSettlementTestService {
             log.info("📋 Test settlement request created:");
             log.info("   Security: {}", request.getSecurityName());
             log.info("   Quantity: {}", request.getQuantity());
-            log.info("   Seller: {} ({})", request.getSellerName(), request.getSellerAccountId());
-            log.info("   Buyer: {} ({})", request.getBuyerName(), request.getBuyerAccountId());
             log.info("   Queue: {}", request.getQueueName());
 
             // Execute the settlement remotely
@@ -66,16 +71,6 @@ public class SecuritiesSettlementTestService {
             } else {
                 log.error("❌ [Remotely] Securities settlement test failed!");
             }
-
-//            // Execute the settlement locally
-//            SecuritiesSettlementResponse responseLocally = settlementService.sendPairedSettlement(request,"local");
-//
-//            // Log the results
-//            if (responseLocally.isSuccess()) {
-//                log.info("✅ [Locally] Securities settlement test completed successfully!");
-//            } else {
-//                log.error("❌ [Locally] Securities settlement test failed!");
-//            }
 
         } catch (Exception e) {
             log.error("❌ Error during securities settlement test", e);

@@ -2,6 +2,8 @@ package com.enterprise.msmq.service;
 
 import com.enterprise.msmq.dto.MsmqMessage;
 import com.enterprise.msmq.dto.MsmqQueue;
+import com.enterprise.msmq.model.MsmqQueueConfig;
+import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
 import com.enterprise.msmq.service.contracts.IMsmqQueueManager;
 import com.enterprise.msmq.platform.windows.MsmqNativeInterface;
 import com.enterprise.msmq.platform.windows.MsmqConstants;
@@ -34,6 +36,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class NativeMsmqQueueManager implements IMsmqQueueManager {
+
+    private final MsmqQueueConfigRepository queueConfigRepository;
 
     @Override
     public boolean createQueue(MsmqQueue queue) {
@@ -373,16 +377,49 @@ public class NativeMsmqQueueManager implements IMsmqQueueManager {
 
     @Override
     public List<MsmqQueue> getAllQueues() {
+        List<MsmqQueue> queues = new ArrayList<>();
         try {
-            log.debug("Getting all queues via Native MSMQ API");
+            log.info("Fetching all queues from database (including inactive)");
+            List<MsmqQueueConfig> configs = queueConfigRepository.findAll();
             
-            // For native MSMQ, we'll use a simple approach to get private queues
-            // This is a simplified implementation - in production you might want to use
-            // MQGetMachineProperties or similar for more comprehensive queue enumeration
+            for (MsmqQueueConfig config : configs) {
+                MsmqQueue queue = new MsmqQueue();
+                queue.setName(config.getQueueName());
+                queue.setPath(config.getQueuePath());
+                queue.setType(config.getQueueType() != null ? config.getQueueType() : "PRIVATE");
+                queue.setDescription(config.getDescription());
+                
+                // Add status information to description
+                String status = config.getIsActive() ? "ACTIVE" : "INACTIVE";
+                if (queue.getDescription() != null && !queue.getDescription().isEmpty()) {
+                    queue.setDescription(queue.getDescription() + " | Status: " + status);
+                } else {
+                    queue.setDescription("Status: " + status);
+                }
+                
+                queues.add(queue);
+                log.debug("Found queue in database: {} ({}) - {}", config.getQueueName(), config.getQueueType(), status);
+            }
+            
+            log.info("Successfully fetched {} queues from database", queues.size());
+        } catch (Exception e) {
+            log.error("Error fetching queues from database: {}", e.getMessage(), e);
+        }
+        return queues;
+    }
+
+    @Override
+    public List<MsmqQueue> getAllRemoteQueues(String remoteHost) {
+        try {
+            log.info("Getting all remote queues via Native MSMQ API from: {}", remoteHost);
+            
+            // For native MSMQ remote queue enumeration, we'll use a simplified approach
+            // In production, you might want to use MQGetMachineProperties or similar
+            // for more comprehensive remote queue enumeration
             
             List<MsmqQueue> queues = new ArrayList<>();
             
-            // Check for common private queues
+            // Check for common private queues on remote machine
             String[] commonQueues = {
                 "securities-settlement-queue",
                 "testqueue",
@@ -390,19 +427,29 @@ public class NativeMsmqQueueManager implements IMsmqQueueManager {
             };
             
             for (String queueName : commonQueues) {
-                if (queueExists(queueName)) {
-                    MsmqQueue queue = new MsmqQueue();
-                    queue.setName(queueName);
-                    queue.setPath("private$\\" + queueName);
-                    queue.setType("PRIVATE");
-                    queues.add(queue);
+                try {
+                    // Build remote queue path using DIRECT format
+                    String remoteQueuePath = buildDirectFormatName(remoteHost, queueName);
+                    
+                    // Test if remote queue exists by trying to open it
+                    if (testQueuePathFormat(remoteQueuePath)) {
+                        MsmqQueue queue = new MsmqQueue();
+                        queue.setName(queueName);
+                        queue.setPath(remoteQueuePath);
+                        queue.setType("PRIVATE");
+                        queue.setDescription("Remote queue on " + remoteHost);
+                        queues.add(queue);
+                        log.debug("Found remote queue: {} on {}", queueName, remoteHost);
+                    }
+                } catch (Exception e) {
+                    log.debug("Error checking remote queue {} on {}: {}", queueName, remoteHost, e.getMessage());
                 }
             }
             
-            log.debug("Found {} queues via Native MSMQ API", queues.size());
+            log.info("Found {} remote queues via Native MSMQ API from {}", queues.size(), remoteHost);
             return queues;
         } catch (Exception e) {
-            log.error("Error getting all queues via Native MSMQ: {}", e.getMessage(), e);
+            log.error("Error getting all remote queues from {} via Native MSMQ: {}", remoteHost, e.getMessage(), e);
             return new ArrayList<>();
         }
     }

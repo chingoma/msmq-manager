@@ -2,6 +2,7 @@ package com.enterprise.msmq.service;
 
 import com.enterprise.msmq.dto.request.SecuritiesSettlementRequest;
 import com.enterprise.msmq.dto.response.SecuritiesSettlementResponse;
+import com.enterprise.msmq.util.DateTimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,12 +37,14 @@ public class SecuritiesSettlementService {
     private static final Logger logger = LoggerFactory.getLogger(SecuritiesSettlementService.class);
 
     private final MsmqMessageTemplateService templateService;
+    private final MessageStatusService messageStatusService;
 
     private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    public SecuritiesSettlementService(MsmqMessageTemplateService templateService) {
+    public SecuritiesSettlementService(MsmqMessageTemplateService templateService, MessageStatusService messageStatusService) {
         this.templateService = templateService;
+        this.messageStatusService = messageStatusService;
     }
 
     /**
@@ -122,14 +125,17 @@ public class SecuritiesSettlementService {
         try {
             Map<String, String> parameters = buildReceParameters(request, receTxId, deliTxId, commonReferenceId);
 
-            // Use existing template service to send message
+            // Use existing template service to send message with tracking info
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SECURITIES_SETTLEMENT", 
                 request.getQueueName(), 
                 parameters,
                 environment,
                 1,
-                null
+                commonReferenceId,
+                receTxId,  // transaction ID
+                "RECE",    // movement type
+                deliTxId   // linked transaction ID
             );
 
             if (success) {
@@ -154,14 +160,17 @@ public class SecuritiesSettlementService {
         try {
             Map<String, String> parameters = buildDeliParameters(request, deliTxId, receTxId, commonReferenceId);
 
-            // Use existing template service to send message
+            // Use existing template service to send message with tracking info
             boolean success = templateService.sendMessageUsingTemplate(
                 "SWIFT_SECURITIES_SETTLEMENT", 
                 request.getQueueName(), 
                 parameters,
                 environment,
                 1,
-                null
+                commonReferenceId,
+                deliTxId,  // transaction ID
+                "DELI",    // movement type
+                receTxId   // linked transaction ID
             );
 
             if (success) {
@@ -210,8 +219,8 @@ public class SecuritiesSettlementService {
         // Trade details
         parameters.put("MARKET_IDENTIFIER", "SAFM");
         parameters.put("MARKET_TYPE", "OTCO");
-        parameters.put("TRADE_DATE_TIME", request.getTradeDate());
-        parameters.put("SETTLEMENT_DATE", request.getSettlementDate());
+        parameters.put("TRADE_DATE_TIME", DateTimeUtil.dateOnly());
+        parameters.put("SETTLEMENT_DATE", DateTimeUtil.dateOnly());
         parameters.put("TRADE_TRANSACTION_CONDITION", "MAPR");
         parameters.put("TRADE_ORIGINATOR_ROLE", "MNOn");
         parameters.put("TRADE_ORIGINATOR_ISSUER", "DSTXTZTZXXX");
@@ -263,7 +272,7 @@ public class SecuritiesSettlementService {
         parameters.put("CREDIT_DEBIT_INDICATOR", "DBIT"); // RECE debits the seller
         
         // Termination date
-        parameters.put("TERMINATION_DATE", request.getTradeDate());
+        parameters.put("TERMINATION_DATE", DateTimeUtil.dateOnly());
         
         return parameters;
     }
@@ -300,8 +309,8 @@ public class SecuritiesSettlementService {
         // Trade details
         parameters.put("MARKET_IDENTIFIER", "SAFM");
         parameters.put("MARKET_TYPE", "OTCO");
-        parameters.put("TRADE_DATE_TIME", request.getTradeDate() + "T15:59:37");
-        parameters.put("SETTLEMENT_DATE", request.getSettlementDate());
+        parameters.put("TRADE_DATE_TIME", DateTimeUtil.dateOnly());
+        parameters.put("SETTLEMENT_DATE", DateTimeUtil.dateOnly());
         parameters.put("TRADE_TRANSACTION_CONDITION", "MAPR");
         parameters.put("TRADE_ORIGINATOR_ROLE", "MNOn");
         parameters.put("TRADE_ORIGINATOR_ISSUER", "DSTXTZTZXXX");
@@ -351,7 +360,7 @@ public class SecuritiesSettlementService {
         parameters.put("CREDIT_DEBIT_INDICATOR", "CRDT"); // DELI credits the buyer
         
         // Termination date
-        parameters.put("TERMINATION_DATE", request.getTradeDate());
+        parameters.put("TERMINATION_DATE", DateTimeUtil.dateOnly());
         
         return parameters;
     }

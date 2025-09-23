@@ -2,6 +2,7 @@ package com.enterprise.msmq.service;
 
 import com.enterprise.msmq.dto.QueueSyncResult;
 import com.enterprise.msmq.service.QueueMonitoringService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,10 +27,22 @@ public class ScheduledQueueSyncService {
     
     private final MsmqQueueSyncService queueSyncService;
     private final QueueMonitoringService monitoringService;
-    
+
+    /**
+     * -- GETTER --
+     *  Check if scheduled synchronization is enabled.
+     *
+     */
+    @Getter
     @Value("${msmq.queue.sync.enabled:true}")
     private boolean syncEnabled;
-    
+
+    /**
+     * -- GETTER --
+     *  Get the current sync interval in milliseconds.
+     *
+     */
+    @Getter
     @Value("${msmq.queue.sync.interval:300000}")
     private long syncIntervalMs;
     
@@ -76,22 +89,5 @@ public class ScheduledQueueSyncService {
         return String.format("Scheduled Queue Sync - Enabled: %s, Interval: %dms (%d minutes)", 
                            syncEnabled, syncIntervalMs, syncIntervalMs / 60000);
     }
-    
-    /**
-     * Check if scheduled synchronization is enabled.
-     * 
-     * @return true if enabled
-     */
-    public boolean isSyncEnabled() {
-        return syncEnabled;
-    }
-    
-    /**
-     * Get the current sync interval in milliseconds.
-     * 
-     * @return sync interval in milliseconds
-     */
-    public long getSyncIntervalMs() {
-        return syncIntervalMs;
-    }
+
 }

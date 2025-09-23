@@ -68,38 +68,6 @@ public class SecuritiesSettlementRequest {
     private String buyerAccountId;
 
     @Schema(
-        description = "Seller's name",
-        example = "John Doe"
-    )
-    @NotBlank(message = "Seller name is required")
-    @JsonProperty("seller_name")
-    private String sellerName;
-
-    @Schema(
-        description = "Buyer's name",
-        example = "Jane Smith"
-    )
-    @NotBlank(message = "Buyer name is required")
-    @JsonProperty("buyer_name")
-    private String buyerName;
-
-    @Schema(
-        description = "Trade date in YYYY-MM-DD format",
-        example = "2025-08-29"
-    )
-    @NotBlank(message = "Trade date is required")
-    @JsonProperty("trade_date")
-    private String tradeDate;
-
-    @Schema(
-        description = "Settlement date in YYYY-MM-DD format",
-        example = "2025-09-03"
-    )
-    @NotBlank(message = "Settlement date is required")
-    @JsonProperty("settlement_date")
-    private String settlementDate;
-
-    @Schema(
         description = "Destination queue name for settlement messages",
         example = "securities-settlement-queue"
     )
