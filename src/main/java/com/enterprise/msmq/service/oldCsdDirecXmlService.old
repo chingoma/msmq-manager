@@ -1,0 +1,779 @@
+package com.enterprise.msmq.service;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
+import com.enterprise.msmq.dto.ApiResponse;
+import com.enterprise.msmq.dto.request.PledgeData;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+import java.io.StringReader;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Service for interacting with the CSD DirectXML API for securities operations
+ * This implementation follows ISO20022 message format standards for:
+ * - Pledge Balance operations (SctiesMvmntTp: DELI, SctiesTxTp: COLI)
+ * - Pledge Release operations (SctiesMvmntTp: RECE, SctiesTxTp: COLO)
+ * 
+ * XML messages are formatted according to ISO20022 sese.023.001.09 schema
+ * with UTF-8 encoding as required by the Tanzania CSD system.
+ * 
+ * Field mappings are based on official CSD documentation.
+ */
+@Service
+@Slf4j
+public class CsdDirecXmlService {
+
+    private final WebClient directXmlWebClient;
+    private final String serviceUrl;
+    private final String username;
+    private final String password;
+
+    public CsdDirecXmlService(
+            @Qualifier("directXmlWebClient") WebClient directXmlWebClient,
+            @Value("${directxml.service.url:http://localhost:8080}") String serviceUrl,
+            @Value("${directxml.service.username:admin}") String username,
+            @Value("${directxml.service.password:password}") String password) {
+        this.directXmlWebClient = directXmlWebClient;
+        this.serviceUrl = serviceUrl;
+        this.username = username;
+        this.password = password;
+    }
+
+    public ApiResponse<Map<String, Object>> pledgeBalance(PledgeData pledgeData) {
+        try {
+            log.info("=== PROCESSING PLEDGE_BALANCE OPERATION ===");
+            log.info("Security ISIN: {}", pledgeData.getSecurityISIN());
+            log.info("Security Description: {}", pledgeData.getSecurityDesc());
+            log.info("Quantity: {}", pledgeData.getQuantity());
+            log.info("Client BPID: {}", pledgeData.getClientBpid());
+            log.info("Broker Code (legacy): {}", pledgeData.getBrokerCode());
+            log.info("CSD Account: {}", pledgeData.getCsdAccount());
+            log.info("Transaction ID: {}", pledgeData.getTransactionId());
+            log.info("Processing ID: {}", pledgeData.getProcessingId());
+            log.info("Pledgee BPID: {}", pledgeData.getPledgeeBpid());
+            log.info("Is Legacy Request: {}", pledgeData.isLegacyRequest());
+            
+            // Build the SOAP request with proper XML message construction
+            String soapRequest = buildPledgeSoapRequest(username, password, pledgeData, "BALANCE");
+            log.info("=== COMPLETE SOAP REQUEST ENVELOPE ===");
+            log.info("\n{}", formatXmlForLogging(soapRequest));
+            
+            // Extract and log the XML payload before escaping
+            String xmlPayload = buildPledgeXmlPayload(pledgeData, "BALANCE");
+            log.info("=== RAW XML PAYLOAD (Before SOAP Wrapping) ===");
+            log.info("\n{}", formatXmlForLogging(xmlPayload));
+            
+            // Send request to DirectXML service
+            log.info("=== SENDING REQUEST TO DIRECTXML SERVICE ===");
+            log.info("Service URL: {}", serviceUrl);
+            log.info("Username: {}", username);
+            
+            String response = sendSoapRequest(serviceUrl, soapRequest);
+                    
+            log.info("=== RESPONSE FROM DIRECTXML SERVICE ===");
+            log.info("\n{}", formatXmlForLogging(response));
+            
+            // Parse response
+            boolean success = parseDirectXmlResponse(response);
+            String message = success ? "Pledge balance operation completed successfully" : extractErrorMessage(response);
+            
+            log.info("=== PROCESSING RESULT ===");
+            log.info("Operation Status: {}", success ? "SUCCESS" : "FAILED");
+            log.info("Result Message: {}", message);
+            
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("transactionId", pledgeData.getTransactionId());
+            responseData.put("processingId", pledgeData.getProcessingId());
+            responseData.put("securityISIN", pledgeData.getSecurityISIN());
+            responseData.put("quantity", pledgeData.getQuantity());
+            responseData.put("operationType", "PLEDGE_BALANCE");
+            responseData.put("status", success ? "PROCESSED" : "FAILED");
+            responseData.put("timestamp", System.currentTimeMillis());
+            responseData.put("rawResponse", response);
+            
+            log.info("=== FINAL RESPONSE DATA ===");
+            log.info("Response Data: {}", responseData);
+            
+            if (success) {
+                return ApiResponse.success(message, responseData);
+            } else {
+                return new ApiResponse<>(com.enterprise.msmq.enums.ResponseCode.VALIDATION_ERROR, message, responseData);
+            }
+            
+        } catch (Exception e) {
+            log.error("=== ERROR PROCESSING PLEDGE BALANCE ===");
+            log.error("Error Message: {}", e.getMessage());
+            log.error("Stack Trace: ", e);
+            return createErrorResponse("Error processing pledge balance: " + e.getMessage(), pledgeData);
+        }
+    }
+
+    public ApiResponse<Map<String, Object>> pledgeRelease(PledgeData pledgeData) {
+        try {
+            log.info("=== PROCESSING PLEDGE_RELEASE OPERATION ===");
+            log.info("Security ISIN: {}", pledgeData.getSecurityISIN());
+            log.info("Security Description: {}", pledgeData.getSecurityDesc());
+            log.info("Quantity: {}", pledgeData.getQuantity());
+            log.info("Client BPID: {}", pledgeData.getClientBpid());
+            log.info("CSD Account: {}", pledgeData.getCsdAccount());
+            log.info("Transaction ID: {}", pledgeData.getTransactionId());
+            log.info("Processing ID: {}", pledgeData.getProcessingId());
+            log.info("Pledgee BPID: {}", pledgeData.getPledgeeBpid());
+            
+            // Build the SOAP request with proper XML message construction
+            String soapRequest = buildPledgeSoapRequest(username, password, pledgeData, "RELEASE");
+            log.info("=== COMPLETE SOAP REQUEST ENVELOPE ===");
+            log.info("\n{}", formatXmlForLogging(soapRequest));
+            
+            // Extract and log the XML payload before escaping
+            String xmlPayload = buildPledgeXmlPayload(pledgeData, "RELEASE");
+            log.info("=== RAW XML PAYLOAD (Before SOAP Wrapping) ===");
+            log.info("\n{}", formatXmlForLogging(xmlPayload));
+            
+            // Send request to DirectXML service
+            log.info("=== SENDING REQUEST TO DIRECTXML SERVICE ===");
+            log.info("Service URL: {}", serviceUrl);
+            log.info("Username: {}", username);
+            
+            // Use the centralized sendSoapRequest method with retry logic
+            String response = sendSoapRequest(serviceUrl, soapRequest);
+                    
+            log.info("=== RESPONSE FROM DIRECTXML SERVICE ===");
+            log.info("\n{}", formatXmlForLogging(response));
+            
+            // Parse response
+            boolean success = parseDirectXmlResponse(response);
+            String message = success ? "Pledge release operation completed successfully" : extractErrorMessage(response);
+            
+            log.info("=== PROCESSING RESULT ===");
+            log.info("Operation Status: {}", success ? "SUCCESS" : "FAILED");
+            log.info("Result Message: {}", message);
+            
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("transactionId", pledgeData.getTransactionId());
+            responseData.put("processingId", pledgeData.getProcessingId());
+            responseData.put("securityISIN", pledgeData.getSecurityISIN());
+            responseData.put("quantity", pledgeData.getQuantity());
+            responseData.put("operationType", "PLEDGE_RELEASE");
+            responseData.put("status", success ? "PROCESSED" : "FAILED");
+            responseData.put("timestamp", System.currentTimeMillis());
+            responseData.put("rawResponse", response);
+            
+            log.info("=== FINAL RESPONSE DATA ===");
+            log.info("Response Data: {}", responseData);
+            
+            if (success) {
+                return ApiResponse.success(message, responseData);
+            } else {
+                return new ApiResponse<>(com.enterprise.msmq.enums.ResponseCode.VALIDATION_ERROR, message, responseData);
+            }
+            
+        } catch (Exception e) {
+            log.error("=== ERROR PROCESSING PLEDGE RELEASE ===");
+            log.error("Error Message: {}", e.getMessage());
+            log.error("Stack Trace: ", e);
+            return createErrorResponse("Error processing pledge release: " + e.getMessage(), pledgeData);
+        }
+    }
+
+    /**
+     * Build the SOAP envelope for pledge operations with ISO20022 message format
+     * Uses the exact format from working CSD examples
+     * 
+     * @param username CSD DirectXML username
+     * @param password CSD DirectXML password
+     * @param pledgeData Data for the pledge operation
+     * @param operationType BALANCE or RELEASE
+     * @return Complete SOAP request XML
+     */
+    private String buildPledgeSoapRequest(String username, String password, PledgeData pledgeData, String operationType) {
+        String xmlPayload = buildPledgeXmlPayload(pledgeData, operationType);
+        
+        // Log the unescaped payload for debugging
+        log.debug("=== UNESCAPED XML PAYLOAD ===");
+        log.debug("\n{}", formatXmlForLogging(xmlPayload));
+        
+        // XML escape special characters in the payload
+        // For SWIFT ISO20022 messages with utf-8 encoding,
+        // proper XML escaping is crucial to maintain integrity
+        String escapedPayload = xmlPayload
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
+        
+        // Format the SOAP envelope with all required parameters (simplified format)
+        String soapEnvelope = String.format(SOAP_ENVELOPE_TEMPLATE, 
+                username,       // Username
+                password,       // Password
+                escapedPayload  // Request payload
+        );
+        
+        log.debug("=== COMPLETE SOAP ENVELOPE ===");
+        log.debug("\n{}", formatXmlForLogging(soapEnvelope));
+        
+        return soapEnvelope;
+    }
+
+    /**
+     * Build the XML payload for pledge operations based on ISO20022 format
+     * Uses official field mappings from CSD documentation
+     * 
+     * @param data The pledge data to include in the XML
+     * @param operationType BALANCE or RELEASE
+     * @return ISO20022 formatted XML payload
+     */
+    private String buildPledgeXmlPayload(PledgeData data, String operationType) {
+        log.info("=== BUILDING XML PAYLOAD ===");
+        log.info("Operation Type: {}", operationType);
+        log.info("Raw PledgeData: {}", data);
+        
+        LocalDateTime now = LocalDateTime.now();
+        // Format: 2021-04-13T07:24:34.664217Z (to match documentation example)
+        String creationDate = now.atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'"));
+        
+        // Trade and settlement dates - Format: 2018-11-15 (to match documentation example)
+        LocalDate today = LocalDate.now();
+        String localDate = today.format(DateTimeFormatter.ISO_DATE);
+        
+        // Transaction ID - Unambiguous identification of the message as known by the instructing party
+        String transactionId = data.getTransactionId() != null ? 
+            data.getTransactionId() : 
+            generateTransactionId();
+        
+        // Processing ID - The pledge reference number on the Member Bank or downstream CSD system
+        String processingId = data.getProcessingId() != null ? 
+            data.getProcessingId() : 
+            String.format("%07d", (int) (Math.random() * 10000000));
+
+        // Holding number - Optional input field with format "HoldingNumber/nnnnn"
+        String holdingNumber = data.getHoldingNumber() != null ? 
+            data.getHoldingNumber() : 
+            String.valueOf(1234580 + (int) (Math.random() * 100000));
+            
+        // Client BPID - The Client BPID of the client that is pledging/releasing the securities
+        String clientBpid = data.getClientBpid() != null ? 
+            data.getClientBpid() : 
+            (data.getBrokerCode() != null ? data.getBrokerCode() : "UNKNOWN_CLIENT");
+            
+        // Pledgee BPID - The pledgee (lender) BPID on the CSD system
+        String pledgeeBpid;
+        if (operationType.equals("BALANCE")) {
+            pledgeeBpid = data.getPledgeeBpid() != null ? data.getPledgeeBpid() : "BOTGUY//BOTGUY";
+        } else { // RELEASE
+            pledgeeBpid = data.getPledgeeBpid() != null ? data.getPledgeeBpid() : "GOV/C//GOV/C";
+        }
+        
+        log.info("=== PROCESSED VALUES ===");
+        log.info("Creation Date: {}", creationDate);
+        log.info("Local Date: {}", localDate);
+        log.info("Transaction ID: {}", transactionId);
+        log.info("Processing ID: {}", processingId);
+        log.info("Holding Number: {}", holdingNumber);
+        log.info("Client BPID: {}", clientBpid);
+        log.info("Pledgee BPID: {}", pledgeeBpid);
+        log.info("Security ISIN: {}", data.getSecurityISIN());
+        log.info("Security Desc: {}", data.getSecurityDesc());
+        log.info("Quantity: {}", data.getQuantity());
+        log.info("CSD Account: {}", data.getCsdAccount());
+
+        // Select appropriate template based on operation type
+        String template = operationType.equals("BALANCE") ? PLEDGE_BALANCE_XML_TEMPLATE : PLEDGE_RELEASE_XML_TEMPLATE;
+        
+        String xml = template
+                .replace("${CREATION_DATE}", creationDate)
+                .replace("${TRADE_DATE}", localDate)
+                .replace("${SETTLEMENT_DATE}", localDate)
+                .replace("${TRANSACTION_ID}", transactionId)
+                .replace("${PROCESSING_ID}", processingId)
+                .replace("${SECURITY_ISIN}", nullToEmpty(data.getSecurityISIN()))
+                .replace("${SECURITY_DESC}", nullToEmpty(data.getSecurityDesc()))
+                .replace("${QUANTITY}", data.getQuantity() != null ? data.getQuantity().toString() : "0")
+                .replace("${CLIENT_BPID}", nullToEmpty(clientBpid))
+                .replace("${CSD_ACCOUNT}", nullToEmpty(data.getCsdAccount()))
+                .replace("${HOLDING_NUMBER}", holdingNumber)
+                .replace("${PLEDGEE_BPID}", pledgeeBpid);
+                
+        // Ensure proper UTF-8 encoding for ISO20022 messages
+        return ensureUtf8Encoding(xml);
+    }
+
+    /**
+     * Parse DirectXML response to determine success/failure
+     */
+    private boolean parseDirectXmlResponse(String response) {
+        try {
+            if (response == null || response.isBlank()) {
+                return false;
+            }
+            
+            String resultCodeText = getNodeText(response, "SubmitRequestResult");
+            if (resultCodeText != null) {
+                int code = parseIntSafe(resultCodeText, -1);
+                return (code == 0); // 0 means success in DirectXML
+            }
+            
+            // Check if there's no explicit error
+            return !response.contains("Error") && !response.contains("fault");
+            
+        } catch (Exception e) {
+            log.error("Error parsing DirectXML response: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Extract detailed error message from ISO20022 response
+     * ISO20022 messages may contain structured error information in several places:
+     * - AddtlRsnInf element for business errors
+     * - ISO20022 Rjctd status with Rsn/Cd elements
+     * - SOAP fault elements for technical errors
+     * 
+     * @param response XML response from the CSD service
+     * @return Extracted error message or generic error if none found
+     */
+    private String extractErrorMessage(String response) {
+        try {
+            // Check for ISO20022 specific rejection reason codes first
+            String rejectionCode = getNodeText(response, "Rsn/Cd");
+            String additionalReasonInfo = getNodeText(response, "AddtlRsnInf");
+            
+            if (rejectionCode != null && !rejectionCode.isBlank()) {
+                String errorDetail = "Rejection code: " + rejectionCode;
+                if (additionalReasonInfo != null && !additionalReasonInfo.isBlank()) {
+                    errorDetail += " - " + additionalReasonInfo;
+                }
+                return errorDetail;
+            }
+            
+            // Check for standalone additional info
+            if (additionalReasonInfo != null && !additionalReasonInfo.isBlank()) {
+                return additionalReasonInfo;
+            }
+            
+            // Check for SOAP fault string
+            String faultString = getNodeText(response, "faultstring");
+            if (faultString != null && !faultString.isBlank()) {
+                return faultString;
+            }
+            
+            // Check for general error
+            if (response != null && response.contains("Error")) {
+                return "Error occurred during processing";
+            }
+            
+            return "Unknown error occurred";
+        } catch (Exception e) {
+            log.error("Error extracting error message: {}", e.getMessage(), e);
+            return "Failed to extract error message";
+        }
+    }
+
+    /**
+     * Create error response for ISO20022 pledge operations
+     * Includes details required for ISO20022 error tracking
+     * 
+     * @param message Error message
+     * @param pledgeData Original pledge data
+     * @return Structured error response
+     */
+    private ApiResponse<Map<String, Object>> createErrorResponse(String message, PledgeData pledgeData) {
+        Map<String, Object> errorData = new HashMap<>();
+        errorData.put("securityISIN", pledgeData.getSecurityISIN());
+        errorData.put("transactionId", pledgeData.getTransactionId());
+        errorData.put("processingId", pledgeData.getProcessingId());
+        errorData.put("timestamp", System.currentTimeMillis());
+        errorData.put("iso20022Format", true);
+        
+        return new ApiResponse<>(
+            com.enterprise.msmq.enums.ResponseCode.SYSTEM_ERROR,
+            message, 
+            errorData
+        );
+    }
+
+    // XML parsing helper methods
+    private String getNodeText(String xml, String localName) {
+        try {
+            if (xml == null || xml.isBlank()) return null;
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            Document doc = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+            XPath xpath = XPathFactory.newInstance().newXPath();
+            String expr = "//*[local-name()='" + localName + "']/text()";
+            String value = (String) xpath.evaluate(expr, doc, XPathConstants.STRING);
+            return (value != null && !value.isBlank()) ? value.trim() : null;
+        } catch (Exception e) {
+            log.debug("XML parse error extracting {}: {}", localName, e.getMessage());
+            return null;
+        }
+    }
+
+    private int parseIntSafe(String s, int def) {
+        try { 
+            return Integer.parseInt(s.trim()); 
+        } catch (Exception e) { 
+            return def; 
+        }
+    }
+
+    /**
+     * Generate a transaction ID in ISO20022 format
+     * Format from documentation: 201601151507312634 (date + time + milliseconds)
+     * @return formatted transaction ID
+     */
+    private String generateTransactionId() {
+        // Format YYYYMMDDHHmmssSSS to match the format in the documentation
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+    }
+
+    private String nullToEmpty(String value) {
+        return value != null ? value : "";
+    }
+    
+    /**
+     * Send SOAP request to the CSD DirectXML service with proper headers and configuration
+     * based on working CSD examples
+     * 
+     * @param endpoint The service endpoint URL
+     * @param soapRequest The complete SOAP request
+     * @return The response from the service
+     */
+    private String sendSoapRequest(String endpoint, String soapRequest) {
+        log.info("=== SENDING REQUEST TO CSD SERVICE AT {} ===", endpoint);
+        
+        try {
+            // Try with SOAPAction header first (as per working examples)
+            return directXmlWebClient
+                .post()
+                .uri(endpoint)
+                .header(HttpHeaders.CONTENT_TYPE, "text/xml; charset=utf-8")
+                .header("SOAPAction", "\"http://tempuri.org/IDirectXMLWebservice/SubmitRequest\"")
+                .accept(MediaType.TEXT_XML, MediaType.APPLICATION_XML)
+                .body(BodyInserters.fromValue(soapRequest))
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        } catch (Exception e) {
+            log.error("Error sending SOAP request to {}: {}", endpoint, e.getMessage());
+            log.error("Request payload: \n{}", formatXmlForLogging(soapRequest));
+            
+            // Fallback: try without SOAPAction header
+            try {
+                log.info("Retrying without SOAPAction header...");
+                return directXmlWebClient
+                    .post()
+                    .uri(endpoint)
+                    .header(HttpHeaders.CONTENT_TYPE, "text/xml; charset=utf-8")
+                    .accept(MediaType.TEXT_XML, MediaType.APPLICATION_XML)
+                    .body(BodyInserters.fromValue(soapRequest))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            } catch (Exception retryEx) {
+                log.error("Retry also failed: {}", retryEx.getMessage());
+                throw new RuntimeException("Failed to communicate with DirectXML service: " + e.getMessage(), e);
+            }
+        }
+    }
+    
+    /**
+     * Ensures proper UTF-8 encoding for XML payload
+     * ISO20022 messages require proper encoding to be processed correctly
+     *
+     * @param xml The XML string to encode
+     * @return Properly UTF-8 encoded XML
+     */
+    private String ensureUtf8Encoding(String xml) {
+        try {
+            // First convert to bytes with UTF-8 encoding
+            byte[] utf8Bytes = xml.getBytes("UTF-8");
+            // Then convert back to a String preserving the encoding
+            return new String(utf8Bytes, "UTF-8");
+        } catch (Exception e) {
+            log.error("Error encoding XML to UTF-8: {}", e.getMessage(), e);
+            return xml; // Return original if encoding fails
+        }
+    }
+
+    /**
+     * Format XML for better readability in logs
+     * Important for debugging ISO20022 messages which can be complex
+     * 
+     * @param xml The XML string to format
+     * @return Formatted XML with line breaks for better readability
+     */
+    private String formatXmlForLogging(String xml) {
+        if (xml == null || xml.isBlank()) {
+            return "NULL OR EMPTY XML";
+        }
+        // Simple formatting - add line breaks after major tags for better readability in logs
+        return xml
+            .replace("><", ">\n<")
+            .replace("<?xml", "\n<?xml")
+            .trim();
+    }
+
+    // SOAP Envelope Template - matches working CSD examples exactly
+    private static final String SOAP_ENVELOPE_TEMPLATE = 
+        "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
+        "  <s:Header>" +
+        "    <Action s:mustUnderstand=\"1\" xmlns=\"http://schemas.microsoft.com/ws/2005/05/addressing/none\">http://tempuri.org/IDirectXMLWebservice/SubmitRequest</Action>" +
+        "  </s:Header>" +
+        "  <s:Body>" +
+        "    <SubmitRequest xmlns=\"http://tempuri.org/\">" +
+        "      <UserName>%s</UserName>" +
+        "      <Password>%s</Password>" +
+        "      <Request>%s</Request>" +
+        "      <Encrypt>false</Encrypt>" +
+        "    </SubmitRequest>" +
+        "  </s:Body>" +
+        "</s:Envelope>";
+
+    // XML Templates for pledge operations based on official CSD documentation field mappings
+    private static final String PLEDGE_BALANCE_XML_TEMPLATE = 
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
+        "<RequestPayload xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+        "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+        "xmlns=\"SWIFTNetBusinessEnvelope\">" +
+        "<AppHdr xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+        "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+        "xmlns=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\">" +
+        "<Fr>" +
+        "<OrgId>" +
+        "<Id>" +
+        "<OrgId>" +
+        "<AnyBIC>TANZTZTXCSD</AnyBIC>" +
+        "</OrgId>" +
+        "</Id>" +
+        "</OrgId>" +
+        "</Fr>" +
+        "<To>" +
+        "<OrgId>" +
+        "<Id>" +
+        "<OrgId>" +
+        "<AnyBIC>DSTXTZTZXXX</AnyBIC>" +
+        "</OrgId>" +
+        "</Id>" +
+        "</OrgId>" +
+        "</To>" +
+        "<BizMsgIdr>Pledge Transaction</BizMsgIdr>" +
+        "<MsgDefIdr>sese.023.001.09.xsd</MsgDefIdr>" +
+        "<CreDt>${CREATION_DATE}</CreDt>" +
+        "</AppHdr>" +
+        "<Document xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+        "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+        "xmlns=\"urn:iso:std:iso:20022:tech:xsd:sese.023.001.09\">" +
+        "<SctiesSttlmTxInstr>" +
+        "<TxId>${TRANSACTION_ID}</TxId>" +
+        "<SttlmTpAndAddtlParams>" +
+        "<SctiesMvmntTp>DELI</SctiesMvmntTp>" +
+        "<Pmt>FREE</Pmt>" +
+        "</SttlmTpAndAddtlParams>" +
+        "<TradDtls>" +
+        "<TradDt>" +
+        "<Dt>" +
+        "<Dt>${TRADE_DATE}</Dt>" +
+        "</Dt>" +
+        "</TradDt>" +
+        "<SttlmDt>" +
+        "<Dt>" +
+        "<Dt>${SETTLEMENT_DATE}</Dt>" +
+        "</Dt>" +
+        "</SttlmDt>" +
+        "<MtchgSts>" +
+        "<Cd>MACH</Cd>" +
+        "</MtchgSts>" +
+        "<SttlmInstrPrcgAddtlDtls>HoldingNumber/${HOLDING_NUMBER}</SttlmInstrPrcgAddtlDtls>" +
+        "</TradDtls>" +
+        "<FinInstrmId>" +
+        "<ISIN>${SECURITY_ISIN}</ISIN>" +
+        "<Desc>${SECURITY_DESC}</Desc>" +
+        "</FinInstrmId>" +
+        "<QtyAndAcctDtls>" +
+        "<SttlmQty>" +
+        "<Qty>" +
+        "<Unit>${QUANTITY}</Unit>" +
+        "</Qty>" +
+        "</SttlmQty>" +
+        "<AcctOwnr>" +
+        "<Id>" +
+        "<PrtryId>" +
+        "<Id>${CLIENT_BPID}</Id>" +
+        "<Issr>BANK OF TANZANA</Issr>" +
+        "<SchmeNm>SOR ACCOUNT</SchmeNm>" +
+        "</PrtryId>" +
+        "</Id>" +
+        "</AcctOwnr>" +
+        "<SfkpgAcct>" +
+        "<Id>${CSD_ACCOUNT}</Id>" +
+        "</SfkpgAcct>" +
+        "<SfkpgPlc>" +
+        "<SfkpgPlcFrmt>" +
+        "<TpAndId>" +
+        "<SfkpgPlcTp>NCSD</SfkpgPlcTp>" +
+        "<Id>TANZTZTXCSD</Id>" +
+        "</TpAndId>" +
+        "</SfkpgPlcFrmt>" +
+        "</SfkpgPlc>" +
+        "</QtyAndAcctDtls>" +
+        "<SttlmParams>" +
+        "<SctiesTxTp>" +
+        "<Cd>COLI</Cd>" +
+        "</SctiesTxTp>" +
+        "</SttlmParams>" +
+        "<RcvgSttlmPties>" +
+        "<Dpstry>" +
+        "<Id>" +
+        "<AnyBIC>TANZTZTXCSD</AnyBIC>" +
+        "</Id>" +
+        "</Dpstry>" +
+        "<Pty1>" +
+        "<Id>" +
+        "<PrtryId>" +
+        "<Id>${PLEDGEE_BPID}</Id>" +
+        "<Issr>CSD</Issr>" +
+        "<SchmeNm>PLEDGEE</SchmeNm>" +
+        "</PrtryId>" +
+        "</Id>" +
+        "<PrcgId>${PROCESSING_ID}</PrcgId>" +
+        "</Pty1>" +
+        "</RcvgSttlmPties>" +
+        "</SctiesSttlmTxInstr>" +
+        "</Document>" +
+        "</RequestPayload>";
+
+    private static final String PLEDGE_RELEASE_XML_TEMPLATE = 
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
+        "<RequestPayload xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+        "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+        "xmlns=\"SWIFTNetBusinessEnvelope\">" +
+        "<AppHdr xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+        "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+        "xmlns=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\">" +
+        "<Fr>" +
+        "<OrgId>" +
+        "<Id>" +
+        "<OrgId>" +
+        "<AnyBIC>TANZTZTXCSD</AnyBIC>" +
+        "</OrgId>" +
+        "</Id>" +
+        "</OrgId>" +
+        "</Fr>" +
+        "<To>" +
+        "<OrgId>" +
+        "<Id>" +
+        "<OrgId>" +
+        "<AnyBIC>DSTXTZTZXXX</AnyBIC>" +
+        "</OrgId>" +
+        "</Id>" +
+        "</OrgId>" +
+        "</To>" +
+        "<BizMsgIdr>Pledge Transaction</BizMsgIdr>" +
+        "<MsgDefIdr>sese.023.001.09.xsd</MsgDefIdr>" +
+        "<CreDt>${CREATION_DATE}</CreDt>" +
+        "</AppHdr>" +
+        "<Document xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+        "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+        "xmlns=\"urn:iso:std:iso:20022:tech:xsd:sese.023.001.09\">" +
+        "<SctiesSttlmTxInstr>" +
+        "<TxId>${TRANSACTION_ID}</TxId>" +
+        "<SttlmTpAndAddtlParams>" +
+        "<SctiesMvmntTp>RECE</SctiesMvmntTp>" +
+        "<Pmt>FREE</Pmt>" +
+        "</SttlmTpAndAddtlParams>" +
+        "<TradDtls>" +
+        "<TradDt>" +
+        "<Dt>" +
+        "<Dt>${TRADE_DATE}</Dt>" +
+        "</Dt>" +
+        "</TradDt>" +
+        "<SttlmDt>" +
+        "<Dt>" +
+        "<Dt>${SETTLEMENT_DATE}</Dt>" +
+        "</Dt>" +
+        "</SttlmDt>" +
+        "<MtchgSts>" +
+        "<Cd>MACH</Cd>" +
+        "</MtchgSts>" +
+        "<SttlmInstrPrcgAddtlDtls>HoldingNumber/${HOLDING_NUMBER}</SttlmInstrPrcgAddtlDtls>" +
+        "</TradDtls>" +
+        "<FinInstrmId>" +
+        "<ISIN>${SECURITY_ISIN}</ISIN>" +
+        "<Desc>${SECURITY_DESC}</Desc>" +
+        "</FinInstrmId>" +
+        "<QtyAndAcctDtls>" +
+        "<SttlmQty>" +
+        "<Qty>" +
+        "<Unit>${QUANTITY}</Unit>" +
+        "</Qty>" +
+        "</SttlmQty>" +
+        "<AcctOwnr>" +
+        "<Id>" +
+        "<PrtryId>" +
+        "<Id>${CLIENT_BPID}</Id>" +
+        "<Issr>BANK OF TANZANA</Issr>" +
+        "<SchmeNm>SOR ACCOUNT</SchmeNm>" +
+        "</PrtryId>" +
+        "</Id>" +
+        "</AcctOwnr>" +
+        "<SfkpgAcct>" +
+        "<Id>${CSD_ACCOUNT}</Id>" +
+        "</SfkpgAcct>" +
+        "<SfkpgPlc>" +
+        "<SfkpgPlcFrmt>" +
+        "<TpAndId>" +
+        "<SfkpgPlcTp>NCSD</SfkpgPlcTp>" +
+        "<Id>TANZTZTXCSD</Id>" +
+        "</TpAndId>" +
+        "</SfkpgPlcFrmt>" +
+        "</SfkpgPlc>" +
+        "</QtyAndAcctDtls>" +
+        "<SttlmParams>" +
+        "<SctiesTxTp>" +
+        "<Cd>COLO</Cd>" +
+        "</SctiesTxTp>" +
+        "</SttlmParams>" +
+        "<DlvrgSttlmPties>" +
+        "<Dpstry>" +
+        "<Id>" +
+        "<AnyBIC>TANZTZTXCSD</AnyBIC>" +
+        "</Id>" +
+        "</Dpstry>" +
+        "<Pty1>" +
+        "<Id>" +
+        "<PrtryId>" +
+        "<Id>${PLEDGEE_BPID}</Id>" +
+        "<Issr>CSD</Issr>" +
+        "<SchmeNm>PLEDGEE</SchmeNm>" +
+        "</PrtryId>" +
+        "</Id>" +
+        "<PrcgId>${PROCESSING_ID}</PrcgId>" +
+        "</Pty1>" +
+        "</DlvrgSttlmPties>" +
+        
+        "</SctiesSttlmTxInstr>" +
+        "</Document>" +
+        "</RequestPayload>";
+}

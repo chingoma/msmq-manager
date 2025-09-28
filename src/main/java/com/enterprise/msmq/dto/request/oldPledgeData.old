@@ -1,0 +1,128 @@
+// package com.enterprise.msmq.dto.request;
+
+// import io.swagger.v3.oas.annotations.media.Schema;
+// import jakarta.validation.constraints.NotBlank;
+// import jakarta.validation.constraints.NotNull;
+// import jakarta.validation.constraints.Positive;
+// import lombok.Data;
+// import lombok.NoArgsConstructor;
+// import lombok.AllArgsConstructor;
+// import lombok.Builder;
+// import java.math.BigDecimal;
+
+// /**
+//  * Request DTO for pledge operations (balance and release).
+//  * Contains information required for pledging and releasing securities
+//  * based on ISO20022 sese.023.001.09 message format and CSD field mappings.
+//  *
+//  * @author Enterprise Development Team
+//  * @version 2.0.0
+//  */
+// @Data
+// @NoArgsConstructor
+// @AllArgsConstructor
+// @Builder
+// @Schema(description = "Request for pledge balance or release operations")
+// public class PledgeData {
+
+//     @Schema(
+//         description = "Security ISIN code - The ISIN of the instrument being traded",
+//         example = "TZ1234568677",
+//         required = true
+//     )
+//     @NotBlank(message = "Security ISIN is required")
+//     private String securityISIN;
+
+//     @Schema(
+//         description = "Security description - Short English description of instrument code",
+//         example = "1006-10.00-T1-A1",
+//         required = true
+//     )
+//     @NotBlank(message = "Security description is required")
+//     private String securityDesc;
+
+//     @Schema(
+//         description = "Quantity to pledge or release - The quantity (number of shares) pledged as collateral",
+//         example = "2000",
+//         required = true
+//     )
+//     @NotNull(message = "Quantity is required")
+//     @Positive(message = "Quantity must be positive")
+//     private BigDecimal quantity;
+
+//     @Schema(
+//         description = "Client BPID - The Client BPID of the client that is pledging the securities",
+//         example = "CTHJOPIE//CTHJOPIE",
+//         required = true
+//     )
+//     @NotBlank(message = "Client BPID is required")
+//     private String clientBpid;
+
+//     @Schema(
+//         description = "Broker code - Legacy field for backward compatibility",
+//         example = "BRK001"
+//     )
+//     private String brokerCode;
+
+//     @Schema(
+//         description = "Safe Custody Account (SCA) - The Safe Custody Account of the member bank where settlement is to take place",
+//         example = "GOV/C",
+//         required = true
+//     )
+//     @NotBlank(message = "CSD account is required")
+//     private String csdAccount;
+
+//     @Schema(
+//         description = "Pledgee BPID - The pledgee (lender) BPID on the CSD system",
+//         example = "BOTGUY//BOTGUY"
+//     )
+//     private String pledgeeBpid;
+
+//     @Schema(
+//         description = "Transaction ID - Unambiguous identification of the message as known by the instructing party",
+//         example = "20160114153903257891721023"
+//     )
+//     private String transactionId;
+
+//     @Schema(
+//         description = "Processing ID - The pledge reference number on the Member Bank or downstream CSD system",
+//         example = "0000207"
+//     )
+//     private String processingId;
+
+//     @Schema(
+//         description = "Holding Number - Optional input field for specific installations (format: HoldingNumber/nnnnn)",
+//         example = "1234580"
+//     )
+//     private String holdingNumber;
+
+//     @Schema(
+//         description = "Trade Date - The trade date when the pledge agreement was entered into (YYYY-MM-DD format)",
+//         example = "2018-11-15"
+//     )
+//     private String tradeDate;
+
+//     @Schema(
+//         description = "Settlement Date - The effective date of this pledge instruction (YYYY-MM-DD format)",
+//         example = "2018-11-15"
+//     )
+//     private String settlementDate;
+
+//     // Getter methods with null safety for backward compatibility
+    
+//     /**
+//      * Get client BPID with fallback to broker code for backward compatibility
+//      * @return Client BPID or broker code if BPID is not set
+//      */
+//     public String getClientBpidOrBrokerCode() {
+//         return clientBpid != null && !clientBpid.isBlank() ? clientBpid : brokerCode;
+//     }
+
+//     /**
+//      * Check if this is a legacy request (using broker code instead of client BPID)
+//      * @return true if using legacy broker code format
+//      */
+//     public boolean isLegacyRequest() {
+//         return (clientBpid == null || clientBpid.isBlank()) && (brokerCode != null && !brokerCode.isBlank());
+//     }
+// }

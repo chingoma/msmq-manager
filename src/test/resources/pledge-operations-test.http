@@ -1,0 +1,58 @@
+### Pledge Operations Test
+### Test the pledge balance endpoint
+
+POST http://localhost:8080/api/v1/pledge/balance
+Content-Type: application/json
+
+{
+    "securityISIN": "US0378331005",
+    "securityDescription": "Apple Inc. Common Stock",
+    "quantity": 1000.00,
+    "quantityUnit": "UNIT",
+    "pledgorAccount": "ACC123456789",
+    "pledgeeAccount": "ACC987654321",
+    "pledgorBIC": "DEUTDEFF",
+    "pledgeeBIC": "CHASUS33",
+    "tradeDate": "2024-01-15",
+    "settlementDate": "2024-01-17",
+    "reference": "TXN-2024-001",
+    "currency": "USD",
+    "marketValue": 150000.00,
+    "collateralPercentage": 80.00,
+    "operationType": "BALANCE",
+    "narrative": "Collateral for loan agreement ABC123"
+}
+
+###
+
+### Test the pledge release endpoint
+
+POST http://localhost:8080/api/v1/pledge/release
+Content-Type: application/json
+
+{
+    "securityISIN": "US0378331005",
+    "securityDescription": "Apple Inc. Common Stock",
+    "quantity": 500.00,
+    "quantityUnit": "UNIT",
+    "pledgorAccount": "ACC123456789",
+    "pledgeeAccount": "ACC987654321",
+    "pledgorBIC": "DEUTDEFF",
+    "pledgeeBIC": "CHASUS33",
+    "tradeDate": "2024-01-15",
+    "settlementDate": "2024-01-17",
+    "reference": "TXN-2024-002",
+    "currency": "USD",
+    "marketValue": 75000.00,
+    "collateralPercentage": 80.00,
+    "operationType": "RELEASE",
+    "narrative": "Partial release of collateral"
+}
+
+###
+
+### Test the transaction status endpoint
+
+GET http://localhost:8080/api/v1/pledge/status/TXN-2024-001
+
+###

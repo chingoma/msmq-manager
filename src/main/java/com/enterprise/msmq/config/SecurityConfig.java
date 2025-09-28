@@ -49,6 +49,10 @@ public class SecurityConfig {
                 .requestMatchers("/v1/securities-settlement/**").permitAll()
                 .requestMatchers("/**").permitAll()
 
+                // Pledge API endpoints (no authentication required)
+                .requestMatchers("/api/v1/pledge/**").permitAll()
+                .requestMatchers("/pledge/**").permitAll()
+
                 // Swagger UI and OpenAPI endpoints
                 .requestMatchers("/v1/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                 
