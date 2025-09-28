@@ -454,6 +454,150 @@ public class PowerShellMsmqQueueManager implements IMsmqQueueManager {
     }
 
     /**
+     * Receives a message from a remote queue using PowerShell.
+     * Returns Optional.empty() if no message or error.
+     */
+    public Optional<MsmqMessage> receiveMessageFromRemote(String remoteMachine, String queueName) {
+        try {
+            log.debug("Receiving message from remote queue: {} on machine: {}", queueName, remoteMachine);
+            
+            String command = "Add-Type -AssemblyName System.Messaging; " +
+                "$formatName = 'FormatName:DIRECT=TCP:" + remoteMachine + "\\private$\\" + queueName + "'; " +
+                "try { " +
+                "    $queue = New-Object System.Messaging.MessageQueue $formatName; " +
+                "    $queue.Formatter = New-Object System.Messaging.XmlMessageFormatter([Type[]]@( [System.Xml.XmlDocument] )); " +
+                "    $message = $queue.Receive([System.TimeSpan]::FromMilliseconds(1000)); " +
+                "    if ($message -ne $null) { " +
+                "        $body = $message.Body; " +
+                "        $label = $message.Label; " +
+                "        $correlationId = $message.CorrelationId; " +
+                "        $priority = $message.Priority; " +
+                "        $messageId = $message.Id; " +
+                "        $output = 'MESSAGE_RECEIVED' + [char]124 + $messageId + [char]124 + $label + [char]124 + $correlationId + [char]124 + $priority + [char]124 + $body; " +
+                "        Write-Output $output; " +
+                "    } else { " +
+                "        Write-Output 'NO_MESSAGE'; " +
+                "    } " +
+                "} catch { " +
+                "    $errorOutput = 'ERROR' + [char]124 + $_.Exception.Message; " +
+                "    Write-Output $errorOutput; " +
+                "}";
+            
+            String result = executePowerShellCommand(command);
+            
+            if (result == null || result.trim().isEmpty()) {
+                log.debug("No response from PowerShell command");
+                return Optional.empty();
+            }
+            
+            if (result.startsWith("ERROR|")) {
+                String error = result.substring(6);
+                log.error("PowerShell error receiving message from remote queue: {}", error);
+                return Optional.empty();
+            }
+            
+            if (result.startsWith("NO_MESSAGE")) {
+                log.debug("No message found in remote queue: {}", queueName);
+                return Optional.empty();
+            }
+            
+            if (result.startsWith("MESSAGE_RECEIVED|")) {
+                String[] parts = result.split("\\|", 6);
+                if (parts.length >= 6) {
+                    String messageId = parts[1];
+                    String label = parts[2];
+                    String correlationId = parts[3];
+                    String priority = parts[4];
+                    String body = parts[5];
+                    
+                    MsmqMessage message = new MsmqMessage();
+                    message.setMessageId(messageId);
+                    message.setLabel(label);
+                    message.setCorrelationId(correlationId);
+                    message.setPriority(Integer.parseInt(priority));
+                    message.setBody(body);
+                    
+                    log.info("Successfully received message from remote queue: {}", queueName);
+                    return Optional.of(message);
+                }
+            }
+            
+            log.warn("Unexpected response from PowerShell command: {}", result);
+            return Optional.empty();
+            
+        } catch (Exception e) {
+            log.error("Error receiving message from remote queue: {}", queueName, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Helper method to execute PowerShell commands and return the result.
+     */
+    private String executePowerShellCommand(String command) {
+        try {
+            Process process = new ProcessBuilder("powershell.exe", "-Command", command).start();
+            
+            // Capture both standard output and error output
+            StringBuilder outputBuilder = new StringBuilder();
+            StringBuilder errorBuilder = new StringBuilder();
+            
+            // Read standard output in a separate thread
+            Thread outputThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        outputBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading PowerShell output: {}", e.getMessage());
+                }
+            });
+            
+            // Read error output in a separate thread
+            Thread errorThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        errorBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading PowerShell error output: {}", e.getMessage());
+                }
+            });
+            
+            // Start both threads
+            outputThread.start();
+            errorThread.start();
+            
+            // Wait for the process to complete
+            int exitCode = process.waitFor();
+            
+            // Wait for both threads to complete
+            outputThread.join();
+            errorThread.join();
+            
+            String output = outputBuilder.toString().trim();
+            String error = errorBuilder.toString().trim();
+            
+            if (exitCode != 0) {
+                log.error("PowerShell command failed with exit code: {}, error: {}", exitCode, error);
+                return null;
+            }
+            
+            if (!error.isEmpty()) {
+                log.warn("PowerShell command produced error output: {}", error);
+            }
+            
+            return output;
+            
+        } catch (Exception e) {
+            log.error("Error executing PowerShell command: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Receives a message from a queue using PowerShell.
      * Returns Optional.empty() if no message or error.
      */

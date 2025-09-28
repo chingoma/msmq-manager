@@ -62,6 +62,9 @@ public class MsmqStatusListenerService {
     @Value("${msmq.status-queues.audit-logs:audit_logs_queue}")
     private String auditLogsQueue;
     
+    @Value("${msmq.remote.server:192.168.2.170}")
+    private String remoteMsmqServer;
+    
     private final Map<String, AtomicBoolean> listenerStates = new ConcurrentHashMap<>();
     private final Map<String, Integer> retryCounters = new ConcurrentHashMap<>();
     
@@ -102,9 +105,9 @@ public class MsmqStatusListenerService {
         }
         
         startListener(statusResponseQueue);
-        startListener(errorNotificationQueue);
-        startListener(processingStatusQueue);
-        startListener(auditLogsQueue);
+//        startListener(errorNotificationQueue);
+//        startListener(processingStatusQueue);
+//        startListener(auditLogsQueue);
     }
     
     /**
@@ -148,13 +151,15 @@ public class MsmqStatusListenerService {
     @Scheduled(fixedDelayString = "${msmq.listener.polling-interval:5000}")
     public void pollStatusQueues() {
         if (!listenerEnabled) {
+            log.info("Status listener is disabled, skipping polling");
             return;
         }
         
+        log.info("Polling status queues...");
         pollQueue(statusResponseQueue);
-        pollQueue(errorNotificationQueue);
-        pollQueue(processingStatusQueue);
-        pollQueue(auditLogsQueue);
+//        pollQueue(errorNotificationQueue);
+//        pollQueue(processingStatusQueue);
+//        pollQueue(auditLogsQueue);
     }
     
     /**
@@ -164,30 +169,36 @@ public class MsmqStatusListenerService {
     public void pollQueue(String queueName) {
         AtomicBoolean listenerState = listenerStates.get(queueName);
         if (listenerState == null || !listenerState.get()) {
+            log.debug("Listener for queue {} is not active, skipping", queueName);
             return;
         }
         
         try {
-            // Check if queue exists and is configured for receiving
-            Optional<MsmqQueueConfig> queueConfig = queueConfigRepository.findByQueueName(queueName);
-            if (queueConfig.isEmpty()) {
-                log.debug("Queue {} not found in database, skipping", queueName);
-                return;
-            }
+            // For status queues, we'll try to poll directly without database checks
+            // since these are system queues that might not be in our database
+            log.debug("Attempting to poll status queue: {}", queueName);
             
-            MsmqQueueConfig config = queueConfig.get();
-            if (!config.getIsActive() || !config.getQueueDirection().allowsReceiving()) {
-                log.debug("Queue {} is not active or does not allow receiving, skipping", queueName);
-                return;
-            }
-            
-            // Create queue manager and receive message
+            // Create queue manager and receive message from remote server
             IMsmqQueueManager queueManager = queueManagerFactory.createQueueManager();
-            Optional<com.enterprise.msmq.dto.MsmqMessage> receivedMessage = queueManager.receiveMessage(queueName);
+            
+            log.debug("Polling remote queue: {} (server: {})", queueName, remoteMsmqServer);
+            
+            // Use the new receiveMessageFromRemote method for remote queues
+            Optional<com.enterprise.msmq.dto.MsmqMessage> receivedMessage;
+            if (queueManager instanceof PowerShellMsmqQueueManager powerShellManager) {
+                receivedMessage = powerShellManager.receiveMessageFromRemote(remoteMsmqServer, queueName);
+            } else {
+                // Fallback to regular receiveMessage for other queue managers
+                String remoteQueuePath = "FormatName:DIRECT=TCP:" + remoteMsmqServer + "\\private$\\" + queueName;
+                receivedMessage = queueManager.receiveMessage(remoteQueuePath);
+            }
             
             if (receivedMessage.isPresent()) {
+                log.info("Received status message from queue: {}", queueName);
                 processStatusMessage(receivedMessage.get(), queueName);
                 retryCounters.put(queueName, 0); // Reset retry counter on success
+            } else {
+                log.debug("No messages found in queue: {}", queueName);
             }
             
         } catch (Exception e) {
