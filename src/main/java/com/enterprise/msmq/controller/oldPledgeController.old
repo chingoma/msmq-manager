@@ -1,0 +1,150 @@
+// package com.enterprise.msmq.controller;
+
+// import com.enterprise.msmq.dto.ApiResponse;
+// import com.enterprise.msmq.dto.request.PledgeData;
+// import com.enterprise.msmq.service.CsdDirecXmlService;
+// import io.swagger.v3.oas.annotations.Operation;
+// import io.swagger.v3.oas.annotations.Parameter;
+// import io.swagger.v3.oas.annotations.responses.ApiResponses;
+// import io.swagger.v3.oas.annotations.tags.Tag;
+// import jakarta.validation.Valid;
+// import lombok.RequiredArgsConstructor;
+// import lombok.extern.slf4j.Slf4j;
+// import org.springframework.http.ResponseEntity;
+// import org.springframework.web.bind.annotation.*;
+
+// import java.util.Map;
+
+// /**
+//  * REST Controller for handling pledge operations.
+//  * Provides endpoints for pledging and releasing securities.
+//  * 
+//  * @author Enterprise Development Team
+//  * @version 1.0.0 
+//  */
+// @Slf4j
+// @RestController
+// @RequestMapping("/pledge")
+// @CrossOrigin(origins = "*")
+// @RequiredArgsConstructor
+// @Tag(name = "Pledge Operations", description = "Securities pledge and release operations")
+// public class oldPledgeController {
+
+//     private final CsdDirecXmlService directXmlService;
+
+//     /**
+//      * Pledge securities balance
+//      * 
+//      * @param pledgeData The pledge request data
+//      * @return ApiResponse indicating the result of the pledge operation
+//      */
+//     @PostMapping("/balance")
+//     @Operation(
+//         summary = "Pledge Securities Balance", 
+//         description = "Creates a pledge of securities balance by delivering securities to the pledgee"
+//     )
+//     @ApiResponses(value = {
+//         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+//             responseCode = "200", 
+//             description = "Pledge operation processed successfully"
+//         ),
+//         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+//             responseCode = "400", 
+//             description = "Invalid request data"
+//         ),
+//         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+//             responseCode = "500", 
+//             description = "Internal server error"
+//         )
+//     })
+//     public ResponseEntity<ApiResponse<Map<String, Object>>> pledgeBalance(
+//             @Parameter(description = "Pledge data for securities to be pledged", required = true)
+//             @Valid @RequestBody PledgeData pledgeData) {
+        
+//         log.info("Received pledge balance request for security: {} with quantity: {}", 
+//                 pledgeData.getSecurityISIN(), pledgeData.getQuantity());
+        
+//         try {
+//             ApiResponse<Map<String, Object>> response = directXmlService.pledgeBalance(pledgeData);
+            
+//             if (response.isSuccess()) {
+//                 log.info("Pledge balance operation completed successfully for security: {}", 
+//                         pledgeData.getSecurityISIN());
+//                 return ResponseEntity.ok(response);
+//             } else {
+//                 log.warn("Pledge balance operation failed for security: {} - {}", 
+//                         pledgeData.getSecurityISIN(), response.getMessage());
+//                 return ResponseEntity.ok(response); // Return 200 with error details in body
+//             }
+            
+//         } catch (Exception e) {
+//             log.error("Unexpected error during pledge balance operation for security: {} - {}", 
+//                     pledgeData.getSecurityISIN(), e.getMessage(), e);
+            
+//             ApiResponse<Map<String, Object>> errorResponse = ApiResponse.error(
+//                 com.enterprise.msmq.enums.ResponseCode.SYSTEM_ERROR,
+//                 "Unexpected error during pledge balance operation: " + e.getMessage()
+//             );
+            
+//             return ResponseEntity.ok(errorResponse);
+//         }
+//     }
+
+//     /**
+//      * Release pledged securities
+//      * 
+//      * @param pledgeData The pledge release request data
+//      * @return ApiResponse indicating the result of the release operation
+//      */
+//     @PostMapping("/release")
+//     @Operation(
+//         summary = "Release Pledged Securities", 
+//         description = "Releases pledged securities by receiving securities back from the pledgee"
+//     )
+//     @ApiResponses(value = {
+//         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+//             responseCode = "200", 
+//             description = "Release operation processed successfully"
+//         ),
+//         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+//             responseCode = "400", 
+//             description = "Invalid request data"
+//         ),
+//         @io.swagger.v3.oas.annotations.responses.ApiResponse(
+//             responseCode = "500", 
+//             description = "Internal server error"
+//         )
+//     })
+//     public ResponseEntity<ApiResponse<Map<String, Object>>> pledgeRelease(
+//             @Parameter(description = "Pledge data for securities to be released", required = true)
+//             @Valid @RequestBody PledgeData pledgeData) {
+        
+//         log.info("Received pledge release request for security: {} with quantity: {}", 
+//                 pledgeData.getSecurityISIN(), pledgeData.getQuantity());
+        
+//         try {
+//             ApiResponse<Map<String, Object>> response = directXmlService.pledgeRelease(pledgeData);
+            
+//             if (response.isSuccess()) {
+//                 log.info("Pledge release operation completed successfully for security: {}", 
+//                         pledgeData.getSecurityISIN());
+//                 return ResponseEntity.ok(response);
+//             } else {
+//                 log.warn("Pledge release operation failed for security: {} - {}", 
+//                         pledgeData.getSecurityISIN(), response.getMessage());
+//                 return ResponseEntity.ok(response); // Return 200 with error details in body
+//             }
+            
+//         } catch (Exception e) {
+//             log.error("Unexpected error during pledge release operation for security: {} - {}", 
+//                     pledgeData.getSecurityISIN(), e.getMessage(), e);
+            
+//             ApiResponse<Map<String, Object>> errorResponse = ApiResponse.error(
+//                 com.enterprise.msmq.enums.ResponseCode.SYSTEM_ERROR,
+//                 "Unexpected error during pledge release operation: " + e.getMessage()
+//             );
+            
+//             return ResponseEntity.ok(errorResponse);
+//         }
+//     }
+// }
