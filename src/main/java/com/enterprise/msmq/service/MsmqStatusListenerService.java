@@ -178,19 +178,37 @@ public class MsmqStatusListenerService {
             // since these are system queues that might not be in our database
             log.debug("Attempting to poll status queue: {}", queueName);
             
-            // Create queue manager and receive message from remote server
+            // Create queue manager
             IMsmqQueueManager queueManager = queueManagerFactory.createQueueManager();
             
-            log.debug("Polling remote queue: {} (server: {})", queueName, remoteMsmqServer);
+            // Try local queue first, then remote if local fails
+            Optional<com.enterprise.msmq.dto.MsmqMessage> receivedMessage = Optional.empty();
             
-            // Use the new receiveMessageFromRemote method for remote queues
-            Optional<com.enterprise.msmq.dto.MsmqMessage> receivedMessage;
-            if (queueManager instanceof PowerShellMsmqQueueManager powerShellManager) {
-                receivedMessage = powerShellManager.receiveMessageFromRemote(remoteMsmqServer, queueName);
-            } else {
-                // Fallback to regular receiveMessage for other queue managers
-                String remoteQueuePath = "FormatName:DIRECT=TCP:" + remoteMsmqServer + "\\private$\\" + queueName;
-                receivedMessage = queueManager.receiveMessage(remoteQueuePath);
+            // First try local queue
+            try {
+                log.debug("Polling local queue: {}", queueName);
+                receivedMessage = queueManager.receiveMessage(queueName, 1000); // 1 second timeout
+                if (receivedMessage.isPresent()) {
+                    log.debug("Found message in local queue: {}", queueName);
+                }
+            } catch (Exception localError) {
+                log.debug("Local queue {} not accessible, trying remote: {}", queueName, localError.getMessage());
+            }
+            
+            // If local queue failed, try remote queue
+            if (!receivedMessage.isPresent()) {
+                try {
+                    log.debug("Polling remote queue: {} (server: {})", queueName, remoteMsmqServer);
+                    if (queueManager instanceof PowerShellMsmqQueueManager powerShellManager) {
+                        receivedMessage = powerShellManager.receiveMessageFromRemote(remoteMsmqServer, queueName);
+                    } else {
+                        // Fallback to regular receiveMessage for other queue managers
+                        String remoteQueuePath = "FormatName:DIRECT=TCP:" + remoteMsmqServer + "\\private$\\" + queueName;
+                        receivedMessage = queueManager.receiveMessage(remoteQueuePath);
+                    }
+                } catch (Exception remoteError) {
+                    log.debug("Remote queue {} not accessible: {}", queueName, remoteError.getMessage());
+                }
             }
             
             if (receivedMessage.isPresent()) {
