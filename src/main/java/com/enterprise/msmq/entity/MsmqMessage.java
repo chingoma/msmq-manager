@@ -51,6 +51,7 @@ public class MsmqMessage {
     private String body;
 
     @Column(name = "priority")
+    @Builder.Default
     private Integer priority = 0;
 
     @Column(name = "message_size")
@@ -66,15 +67,19 @@ public class MsmqMessage {
     private LocalDateTime expiresAt;
 
     @Column(name = "is_processed")
+    @Builder.Default
     private Boolean isProcessed = false;
 
     @Column(name = "processing_status", length = 50)
+    @Builder.Default
     private String processingStatus = "PENDING";
 
     @Column(name = "retry_count")
+    @Builder.Default
     private Integer retryCount = 0;
 
     @Column(name = "max_retries")
+    @Builder.Default
     private Integer maxRetries = 3;
 
     @Column(name = "error_message", columnDefinition = "TEXT")
@@ -83,6 +88,34 @@ public class MsmqMessage {
     @Column(name = "additional_properties", columnDefinition = "JSONB")
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> additionalProperties;
+
+    // New fields for enhanced status tracking
+    @Column(name = "common_reference_id", length = 50)
+    private String commonReferenceId;
+
+    @Column(name = "transaction_id", length = 100)
+    private String transactionId;
+
+    @Column(name = "movement_type", length = 20)
+    private String movementType; // RECE, DELI, etc.
+
+    @Column(name = "linked_transaction_id", length = 100)
+    private String linkedTransactionId;
+
+    @Column(name = "sent_at")
+    private LocalDateTime sentAt;
+
+    @Column(name = "received_at")
+    private LocalDateTime receivedAt;
+
+    @Column(name = "processed_at")
+    private LocalDateTime processedAt;
+
+    @Column(name = "environment", length = 20)
+    private String environment; // local, remote
+
+    @Column(name = "template_name", length = 100)
+    private String templateName;
 
     // Foreign key relationship to queue config
     @ManyToOne(fetch = FetchType.LAZY)

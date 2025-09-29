@@ -3,13 +3,15 @@ package com.enterprise.msmq.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
  * MSMQ Message DTO for API operations.
- * 
+ * <p>
  * This class represents an MSMQ message with all its properties
  * including body, headers, and metadata.
  * 
@@ -17,9 +19,12 @@ import java.util.Map;
  * @version 1.0.0
  * @since 2024-01-01
  */
+@Setter
+@Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MsmqMessage {
 
+    // Getters and Setters
     /**
      * Unique identifier for the message.
      */
@@ -168,151 +173,6 @@ public class MsmqMessage {
         this.messageId = messageId;
         this.priority = priority;
         this.correlationId = correlationId;
-    }
-
-    // Getters and Setters
-    public String getMessageId() {
-        return messageId;
-    }
-
-    public void setMessageId(String messageId) {
-        this.messageId = messageId;
-    }
-
-    public String getBody() {
-        return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public Integer getPriority() {
-        return priority;
-    }
-
-    public void setPriority(Integer priority) {
-        this.priority = priority;
-    }
-
-    public String getCorrelationId() {
-        return correlationId;
-    }
-
-    public void setCorrelationId(String correlationId) {
-        this.correlationId = correlationId;
-    }
-
-    public String getMessageType() {
-        return messageType;
-    }
-
-    public void setMessageType(String messageType) {
-        this.messageType = messageType;
-    }
-
-    public LocalDateTime getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(LocalDateTime createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    public LocalDateTime getSentTime() {
-        return sentTime;
-    }
-
-    public void setSentTime(LocalDateTime sentTime) {
-        this.sentTime = sentTime;
-    }
-
-    public LocalDateTime getReceivedTime() {
-        return receivedTime;
-    }
-
-    public void setReceivedTime(LocalDateTime receivedTime) {
-        this.receivedTime = receivedTime;
-    }
-
-    public String getSourceQueue() {
-        return sourceQueue;
-    }
-
-    public void setSourceQueue(String sourceQueue) {
-        this.sourceQueue = sourceQueue;
-    }
-
-    public String getDestinationQueue() {
-        return destinationQueue;
-    }
-
-    public void setDestinationQueue(String destinationQueue) {
-        this.destinationQueue = destinationQueue;
-    }
-
-    public Long getSize() {
-        return size;
-    }
-
-    public void setSize(Long size) {
-        this.size = size;
-    }
-
-    public Integer getDeliveryCount() {
-        return deliveryCount;
-    }
-
-    public void setDeliveryCount(Integer deliveryCount) {
-        this.deliveryCount = deliveryCount;
-    }
-
-    public Integer getMaxDeliveryCount() {
-        return maxDeliveryCount;
-    }
-
-    public void setMaxDeliveryCount(Integer maxDeliveryCount) {
-        this.maxDeliveryCount = maxDeliveryCount;
-    }
-
-    public LocalDateTime getExpirationTime() {
-        return expirationTime;
-    }
-
-    public void setExpirationTime(LocalDateTime expirationTime) {
-        this.expirationTime = expirationTime;
-    }
-
-    public Map<String, Object> getProperties() {
-        return properties;
-    }
-
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
     }
 
     /**

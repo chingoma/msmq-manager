@@ -89,6 +89,14 @@ public interface IMsmqQueueManager {
     List<MsmqQueue> getAllQueues();
 
     /**
+     * Gets all available queues from a remote MSMQ server.
+     *
+     * @param remoteHost the remote MSMQ server hostname or IP
+     * @return list of available queues from remote server
+     */
+    List<MsmqQueue> getAllRemoteQueues(String remoteHost);
+
+    /**
      * Gets a specific queue by path/name.
      *
      * @param queuePath the path/name of the queue

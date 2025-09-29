@@ -77,4 +77,63 @@ public interface MsmqMessageRepository extends JpaRepository<MsmqMessage, Long> 
      */
     @Query("SELECT m FROM MsmqMessage m WHERE m.createdAt BETWEEN :startTime AND :endTime ORDER BY m.createdAt DESC")
     List<MsmqMessage> findByCreatedAtBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    // New methods for enhanced status tracking
+
+    /**
+     * Find messages by common reference ID (for paired messages like RECE/DELI).
+     */
+    List<MsmqMessage> findByCommonReferenceIdOrderByCreatedAtAsc(String commonReferenceId);
+
+    /**
+     * Find messages by transaction ID.
+     */
+    Optional<MsmqMessage> findByTransactionId(String transactionId);
+
+    /**
+     * Find messages by movement type (RECE, DELI, etc.).
+     */
+    List<MsmqMessage> findByMovementTypeOrderByCreatedAtDesc(String movementType);
+
+    /**
+     * Find messages by common reference ID and movement type.
+     */
+    List<MsmqMessage> findByCommonReferenceIdAndMovementTypeOrderByCreatedAtAsc(String commonReferenceId, String movementType);
+
+    /**
+     * Find messages by linked transaction ID.
+     */
+    List<MsmqMessage> findByLinkedTransactionIdOrderByCreatedAtAsc(String linkedTransactionId);
+
+    /**
+     * Find messages by environment (local, remote).
+     */
+    List<MsmqMessage> findByEnvironmentOrderByCreatedAtDesc(String environment);
+
+    /**
+     * Find messages by template name.
+     */
+    List<MsmqMessage> findByTemplateNameOrderByCreatedAtDesc(String templateName);
+
+    /**
+     * Find messages by processing status and environment.
+     */
+    List<MsmqMessage> findByProcessingStatusAndEnvironmentOrderByCreatedAtDesc(String processingStatus, String environment);
+
+    /**
+     * Count messages by common reference ID.
+     */
+    long countByCommonReferenceId(String commonReferenceId);
+
+    /**
+     * Find messages that need status updates (sent but not yet processed).
+     */
+    @Query("SELECT m FROM MsmqMessage m WHERE m.sentAt IS NOT NULL AND m.processedAt IS NULL AND m.processingStatus = 'SENT'")
+    List<MsmqMessage> findMessagesNeedingStatusUpdate();
+
+    /**
+     * Find paired messages (RECE and DELI) by common reference ID.
+     */
+    @Query("SELECT m FROM MsmqMessage m WHERE m.commonReferenceId = :commonReferenceId AND m.movementType IN ('RECE', 'DELI') ORDER BY m.movementType, m.createdAt ASC")
+    List<MsmqMessage> findPairedMessagesByCommonReferenceId(@Param("commonReferenceId") String commonReferenceId);
 }

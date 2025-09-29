@@ -14,6 +14,7 @@ import com.enterprise.msmq.service.contracts.IMsmqQueueManager;
 import com.enterprise.msmq.validator.MsmqConfigurationValidator;
 import com.enterprise.msmq.repository.MsmqQueueConfigRepository;
 import com.enterprise.msmq.model.MsmqQueueConfig;
+import org.springframework.beans.factory.annotation.Value;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,9 @@ public class MsmqService implements IMsmqService {
     private final RedisMetricsService redisMetricsService;
     private final MsmqConfigurationValidator configurationValidator;
     private final MsmqQueueConfigRepository queueConfigRepository;
+
+    @Value("${msmq.remote.server:192.168.2.170}")
+    private String remoteMsmqServer;
 
     private IMsmqConnectionManager connectionManager;
     private IMsmqQueueManager queueManager;
@@ -142,9 +146,20 @@ public class MsmqService implements IMsmqService {
             // Validate queue parameters
             validateQueueParameters(queue);
 
-            // Check if queue already exists
-            if (queueExists(queue.getName())) {
+            // Check if queue already exists in MSMQ
+            boolean queueExistsInMsmq = queueExists(queue.getName());
+            
+            // Check if queue exists in database
+            Optional<MsmqQueueConfig> existingConfig = queueConfigRepository.findByQueueName(queue.getName());
+            
+            if (queueExistsInMsmq && existingConfig.isPresent()) {
+                // Queue exists in both MSMQ and database
                 throw new MsmqException(ResponseCode.QUEUE_ALREADY_EXISTS, "Queue already exists: " + queue.getName());
+            } else if (queueExistsInMsmq && existingConfig.isEmpty()) {
+                // Queue exists in MSMQ but not in database - create database record
+                logger.info("Queue {} exists in MSMQ but not in database. Creating database record.", queue.getName());
+                createQueueConfigInDatabase(queue);
+                return queue; // Return the queue as it already exists in MSMQ
             }
 
             // Ensure connection is active
@@ -501,14 +516,14 @@ public class MsmqService implements IMsmqService {
             boolean success;
             if ("remote".equalsIgnoreCase(environment)) {
                 // For remote sending, use the proper remote sending methods
-                logger.info("Sending to remote environment: {} using remote machine: 192.168.2.170", queueName);
+                logger.info("Sending to remote environment: {} using remote machine: {}", queueName, remoteMsmqServer);
                 
                 // Check if queueName is already a FormatName path
                 if (queueName.toUpperCase().startsWith("FORMATNAME:")) {
                     success = queueManager.sendMessageToRemote(queueName, parsedMessage);
                 } else {
                     // Use machine name and queue name for remote sending
-                    success = queueManager.sendMessageToRemote("192.168.2.170", queueName, parsedMessage);
+                    success = queueManager.sendMessageToRemote(remoteMsmqServer, queueName, parsedMessage);
                 }
             } else {
                 // Local sending
@@ -1299,6 +1314,40 @@ public class MsmqService implements IMsmqService {
         } catch (Exception e) {
             logger.error("Error getting comprehensive queue info for '{}': {}", queueName, e.getMessage());
             throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to get queue information", e);
+        }
+    }
+
+    /**
+     * Creates a queue configuration record in the database for an existing MSMQ queue.
+     */
+    private void createQueueConfigInDatabase(MsmqQueue queue) throws MsmqException {
+        try {
+            logger.info("Creating database record for existing MSMQ queue: {}", queue.getName());
+            
+            // Create queue configuration
+            MsmqQueueConfig queueConfig = new MsmqQueueConfig();
+            queueConfig.setQueueName(queue.getName());
+            queueConfig.setQueuePath(queue.getPath() != null ? queue.getPath() : "private$\\" + queue.getName());
+            queueConfig.setQueueType(queue.getType() != null ? queue.getType() : "PRIVATE");
+            queueConfig.setDescription(queue.getDescription());
+            queueConfig.setMaxMessageSize(queue.getMaxSize() != null ? queue.getMaxSize() : 104857600L);
+            queueConfig.setIsTransactional(queue.getTransactional() != null ? queue.getTransactional() : false);
+            queueConfig.setIsAuthenticated(queue.getAuthenticated() != null ? queue.getAuthenticated() : false);
+            queueConfig.setIsEncrypted(queue.getEncrypted() != null ? queue.getEncrypted() : false);
+            queueConfig.setQueueDirection(QueueDirection.BIDIRECTIONAL); // Default direction
+            queueConfig.setQueuePurpose(QueuePurpose.GENERAL); // Default purpose
+            queueConfig.setIsActive(true);
+            queueConfig.setCreatedAt(LocalDateTime.now());
+            queueConfig.setUpdatedAt(LocalDateTime.now());
+            
+            // Save to database
+            queueConfigRepository.save(queueConfig);
+            
+            logger.info("Successfully created database record for existing MSMQ queue: {}", queue.getName());
+            
+        } catch (Exception e) {
+            logger.error("Failed to create database record for existing MSMQ queue: {}", queue.getName(), e);
+            throw new MsmqException(ResponseCode.SYSTEM_ERROR, "Failed to create database record for existing queue: " + queue.getName(), e);
         }
     }
 }

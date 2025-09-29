@@ -1,130 +1,170 @@
 package com.enterprise.msmq.entity;
 
-import com.enterprise.msmq.enums.AlertSeverity;
-import com.enterprise.msmq.enums.AlertType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
+import lombok.EqualsAndHashCode;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * Entity for managing mailing lists and recipient groups.
- * 
- * @author Enterprise MSMQ Team
- * @version 1.0
+ * Entity representing mailing lists for notification distribution.
+ * Maps to the mailing_lists table.
+ *
+ * @author Enterprise Development Team
+ * @version 1.0.0
+ * @since 2024-01-01
  */
 @Entity
 @Table(name = "mailing_lists")
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 public class MailingList {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(name = "list_name", nullable = false, unique = true)
+
+    @Column(name = "list_name", length = 100, nullable = false, unique = true)
     private String listName;
-    
-    @Column(name = "description")
+
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
-    
-    @ElementCollection(fetch = FetchType.EAGER)
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    @Column(name = "created_by", length = 100)
+    private String createdBy;
+
+    @Column(name = "updated_by", length = 100)
+    private String updatedBy;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @ElementCollection
     @CollectionTable(
         name = "mailing_list_recipients",
         joinColumns = @JoinColumn(name = "mailing_list_id")
     )
     @Column(name = "email_address")
-    private List<String> emailAddresses;
-    
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
-    
-    @Column(name = "alert_severities")
-    @Enumerated(EnumType.STRING)
-    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> recipients = new HashSet<>();
+
+    @ElementCollection(targetClass = AlertSeverity.class)
     @CollectionTable(
         name = "mailing_list_alert_severities",
         joinColumns = @JoinColumn(name = "mailing_list_id")
     )
-    private List<AlertSeverity> alertSeverities;
-    
-    @Column(name = "alert_types")
+    @Column(name = "alert_severities")
     @Enumerated(EnumType.STRING)
-    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<AlertSeverity> alertSeverities = new HashSet<>();
+
+    @ElementCollection(targetClass = AlertType.class)
     @CollectionTable(
         name = "mailing_list_alert_types",
         joinColumns = @JoinColumn(name = "mailing_list_id")
     )
-    private List<AlertType> alertTypes;
-    
-    @Column(name = "created_by")
-    private String createdBy;
-    
-    @Column(name = "updated_by")
-    private String updatedBy;
-    
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-    
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    
+    @Column(name = "alert_types")
+    @Enumerated(EnumType.STRING)
+    private Set<AlertType> alertTypes = new HashSet<>();
+
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
-    
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-    
+
     /**
-     * Check if this mailing list should receive alerts for the given severity and type.
-     * 
-     * @param severity the alert severity
-     * @param type the alert type
-     * @return true if the mailing list should receive this alert
+     * Gets the email addresses for this mailing list.
+     * This is an alias for getRecipients() to maintain compatibility with existing services.
+     *
+     * @return Set of email addresses
      */
-    public boolean shouldReceiveAlert(AlertSeverity severity, AlertType type) {
-        if (!isActive) {
-            return false;
+    public Set<String> getEmailAddresses() {
+        return recipients;
+    }
+
+    /**
+     * Sets the email addresses for this mailing list.
+     * This is an alias for setRecipients() to maintain compatibility with existing services.
+     *
+     * @param emailAddresses Set of email addresses
+     */
+    public void setEmailAddresses(Set<String> emailAddresses) {
+        this.recipients = emailAddresses;
+    }
+
+    /**
+     * Determines if this mailing list should receive a specific alert.
+     *
+     * @param severity The alert severity
+     * @param alertType The alert type
+     * @return true if this mailing list should receive the alert
+     */
+    public boolean shouldReceiveAlert(com.enterprise.msmq.enums.AlertSeverity severity, com.enterprise.msmq.enums.AlertType alertType) {
+        // Convert from enum to our internal enum types
+        AlertSeverity internalSeverity = convertToInternalSeverity(severity);
+        AlertType internalAlertType = convertToInternalAlertType(alertType);
+
+        // If no specific severities are configured, accept all
+        boolean severityMatch = alertSeverities.isEmpty() || alertSeverities.contains(internalSeverity);
+
+        // If no specific alert types are configured, accept all
+        boolean alertTypeMatch = alertTypes.isEmpty() || alertTypes.contains(internalAlertType);
+
+        return severityMatch && alertTypeMatch;
+    }
+
+    /**
+     * Converts external AlertSeverity enum to internal enum
+     */
+    private AlertSeverity convertToInternalSeverity(com.enterprise.msmq.enums.AlertSeverity severity) {
+        if (severity == null) return null;
+        try {
+            return AlertSeverity.valueOf(severity.name());
+        } catch (IllegalArgumentException e) {
+            return null;
         }
-        
-        // If no specific severities/types are configured, receive all
-        if ((alertSeverities == null || alertSeverities.isEmpty()) && 
-            (alertTypes == null || alertTypes.isEmpty())) {
-            return true;
+    }
+
+    /**
+     * Converts external AlertType enum to internal enum
+     */
+    private AlertType convertToInternalAlertType(com.enterprise.msmq.enums.AlertType alertType) {
+        if (alertType == null) return null;
+        try {
+            return AlertType.valueOf(alertType.name());
+        } catch (IllegalArgumentException e) {
+            return null;
         }
-        
-        // Check severity filter
-        if (alertSeverities != null && !alertSeverities.isEmpty() && 
-            !alertSeverities.contains(severity)) {
-            return false;
-        }
-        
-        // Check type filter
-        if (alertTypes != null && !alertTypes.isEmpty() && 
-            !alertTypes.contains(type)) {
-            return false;
-        }
-        
-        return true;
+    }
+
+    /**
+     * Enumeration of alert severity levels
+     */
+    public enum AlertSeverity {
+        INFO, WARNING, ERROR
+    }
+
+    /**
+     * Enumeration of alert types
+     */
+    public enum AlertType {
+        QUEUE_CREATED,
+        QUEUE_DELETED,
+        QUEUE_INACTIVE_TOO_LONG,
+        QUEUE_UNHEALTHY,
+        PERFORMANCE_DEGRADATION,
+        SYNC_FAILURE,
+        SYSTEM_ERROR
     }
 }

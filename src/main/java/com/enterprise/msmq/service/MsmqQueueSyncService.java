@@ -1,5 +1,6 @@
 package com.enterprise.msmq.service;
 
+import com.enterprise.msmq.config.MsmqRemoteProperties;
 import com.enterprise.msmq.dto.MsmqQueue;
 import com.enterprise.msmq.dto.QueueSyncResult;
 import com.enterprise.msmq.model.MsmqQueueConfig;
@@ -37,6 +38,7 @@ public class MsmqQueueSyncService {
     private final MsmqQueueManagerFactory queueManagerFactory;
     private final MsmqQueueConfigRepository queueConfigRepository;
     private final QueueMonitoringService monitoringService;
+    private final MsmqRemoteProperties remoteProperties;
     
     @Value("${msmq.queue.sync.retry-attempts:3}")
     private int maxRetryAttempts;
@@ -236,37 +238,81 @@ public class MsmqQueueSyncService {
     
     /**
      * Force synchronization of a specific queue.
+     * If the queue configuration doesn't exist, it will be created.
      * 
      * @param queueName the name of the queue to sync
      * @return true if sync was successful
      */
     public boolean syncSpecificQueue(String queueName) {
         try {
-            Optional<MsmqQueueConfig> queueOpt = queueConfigRepository.findByQueueName(queueName);
-            if (queueOpt.isEmpty()) {
-                log.warn("Queue configuration not found: {}", queueName);
-                return false;
+            log.info("Starting specific queue synchronization for: {}", queueName);
+            
+            // Check if this is a remote queue and if it's in the configured list
+            if (remoteProperties.isEnabled()) {
+                String[] configuredQueues = remoteProperties.getQueueNames().split(",");
+                boolean isConfiguredQueue = false;
+                for (String configuredQueue : configuredQueues) {
+                    if (configuredQueue.trim().equals(queueName)) {
+                        isConfiguredQueue = true;
+                        break;
+                    }
+                }
+                if (!isConfiguredQueue) {
+                    log.warn("Queue '{}' is not in the configured remote queue list: {}", 
+                        queueName, remoteProperties.getQueueNames());
+                }
             }
             
             IMsmqQueueManager queueManager = queueManagerFactory.createQueueManager();
             Optional<MsmqQueue> msmqQueue = queueManager.getQueue(queueName);
             
             if (msmqQueue.isPresent()) {
-                MsmqQueueConfig config = queueOpt.get();
+                // Queue exists in MSMQ, find or create configuration
+                Optional<MsmqQueueConfig> queueOpt = queueConfigRepository.findByQueueName(queueName);
+                MsmqQueueConfig config;
+                
+                if (queueOpt.isPresent()) {
+                    // Update existing configuration
+                    config = queueOpt.get();
+                    log.debug("Updating existing queue configuration for: {}", queueName);
+                } else {
+                    // Create new configuration for remote queue
+                    config = new MsmqQueueConfig();
+                    config.setQueueName(queueName);
+                    config.setIsActive(true);
+                    config.setCreatedBy("SYSTEM_SYNC");
+                    config.setMaxMessageSize(4194304L); // 4MB default
+                    config.setIsPrivate(true); // Remote queues are typically private
+                    log.info("Creating new queue configuration for remote queue: {}", queueName);
+                }
+                
+                // Update configuration with current queue information
                 config.setQueuePath(msmqQueue.get().getPath());
+                config.setQueueType(msmqQueue.get().getType());
+                config.setDescription(msmqQueue.get().getDescription());
                 config.setUpdatedBy("SYSTEM_SYNC");
                 config.updateLastSyncTime();
+                
                 queueConfigRepository.save(config);
-                log.info("Successfully synced specific queue: {}", queueName);
+                log.info("Successfully synced specific queue: {} (Path: {})", queueName, msmqQueue.get().getPath());
                 return true;
+                
             } else {
-                // Queue no longer exists in MSMQ
-                MsmqQueueConfig config = queueOpt.get();
-                config.setIsActive(false);
-                config.updateLastSyncTime();
-                queueConfigRepository.save(config);
-                log.info("Marked queue as inactive during specific sync: {}", queueName);
-                return true;
+                // Queue doesn't exist in MSMQ
+                Optional<MsmqQueueConfig> queueOpt = queueConfigRepository.findByQueueName(queueName);
+                if (queueOpt.isPresent()) {
+                    // Mark existing configuration as inactive
+                    MsmqQueueConfig config = queueOpt.get();
+                    config.setIsActive(false);
+                    config.setUpdatedBy("SYSTEM_SYNC");
+                    config.updateLastSyncTime();
+                    queueConfigRepository.save(config);
+                    log.info("Marked queue as inactive during specific sync: {}", queueName);
+                    return true; // Successfully marked as inactive
+                } else {
+                    log.warn("Queue '{}' not found in MSMQ system and no configuration exists", queueName);
+                    return false; // Queue doesn't exist and no configuration to update
+                }
             }
             
         } catch (Exception e) {

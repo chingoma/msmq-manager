@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -104,9 +105,12 @@ public class EmailNotificationService {
             JavaMailSender mailSender = createMailSender(emailConfig);
             MimeMessage message = createAlertMessage(alert, mailingList, emailConfig);
             
+            // Convert Set<String> to List<String> for sendWithRetry method
+            List<String> recipientList = new ArrayList<>(mailingList.getEmailAddresses());
+
             // Send with retry logic
-            sendWithRetry(mailSender, message, mailingList.getEmailAddresses());
-            
+            sendWithRetry(mailSender, message, recipientList);
+
             log.debug("Successfully sent alert notification to mailing list: {}", mailingList.getListName());
             
         } catch (Exception e) {

@@ -30,6 +30,9 @@ public class MsmqQueueConfig {
     @Column(name = "queue_path")
     private String queuePath;
 
+    @Column(name = "queue_type")
+    private String queueType;
+
     @Column(name = "description")
     private String description;
 
@@ -123,6 +126,14 @@ public class MsmqQueueConfig {
 
     public void setQueuePath(String queuePath) {
         this.queuePath = queuePath;
+    }
+
+    public String getQueueType() {
+        return queueType;
+    }
+
+    public void setQueueType(String queueType) {
+        this.queueType = queueType;
     }
 
     public String getDescription() {

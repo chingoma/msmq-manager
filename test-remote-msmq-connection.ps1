@@ -1,7 +1,10 @@
 # Test script to verify remote MSMQ connection and send XML message
 # Usage: .\test-remote-msmq-connection.ps1
 
-$remoteHost = "192.168.2.170"
+$remoteHost = $env:MSMQ_REMOTE_SERVER
+if (-not $remoteHost) {
+    $remoteHost = "192.168.2.170"  # Default fallback
+}
 $queueName = "crdb_to_dse"
 
 # MSMQ format names
