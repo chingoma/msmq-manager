@@ -197,8 +197,8 @@ public class PledgeInstructionService {
         
         // Account details - Format BPID as "XXXXX//XXXXX" to match vendor's format
         String brokerCode = request.getBrokerCode();
-        String clientBPID = request.getClientBpid() != null ? request.getClientBpid() : brokerCode;
-        parameters.put("CLIENT_BPID", clientBPID + "//" + clientBPID);
+         parameters.put("BROKER_CODE",brokerCode); 
+        parameters.put("CLIENT_BPID", request.getCsdAccount() + "//" + request.getCsdAccount());
         parameters.put("ACCOUNT_ISSUER", "BANK OF TANZANA");
         parameters.put("ACCOUNT_SCHEME", "SOR ACCOUNT");
         parameters.put("CSD_ACCOUNT", request.getCsdAccount());
