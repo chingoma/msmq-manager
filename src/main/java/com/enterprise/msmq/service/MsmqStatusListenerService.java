@@ -151,7 +151,7 @@ public class MsmqStatusListenerService {
     @Scheduled(fixedDelayString = "${msmq.listener.polling-interval:5000}")
     public void pollStatusQueues() {
         if (!listenerEnabled) {
-            log.info("Status listener is disabled, skipping polling");
+//            log.info("Status listener is disabled, skipping polling");
             return;
         }
         

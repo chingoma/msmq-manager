@@ -72,10 +72,10 @@ public class MsmqIntegrationTestService {
 //            testConnectionInfrastructure();
             
             // Test 2: Create SWIFT template
-//            testTemplateCreation();
+            testTemplateCreation();
             
             // Test 3: Send message using template
-//            testTemplateMessageSending();
+            testTemplateMessageSending();
             
             // Test 4: Send direct message
           //  testDirectMessageSending();

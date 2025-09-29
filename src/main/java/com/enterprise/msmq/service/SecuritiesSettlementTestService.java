@@ -37,7 +37,6 @@ public class SecuritiesSettlementTestService {
         try {
 
             if (!integrationTestsEnabled) {
-                log.info("🚫 MSMQ Integration Tests are disabled in configuration");
                 return;
             }
 
