@@ -2,6 +2,7 @@ package com.enterprise.msmq.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -28,6 +29,17 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    @Value("${spring.security.user.name:admin}")
+    private String adminUsername;
+
+    @Value("${spring.security.user.password}")
+    private String adminPassword;
+
+    @Value("${security.default.user.username:user}")
+    private String defaultUsername;
+
+    @Value("${security.default.user.password}")
+    private String defaultPassword;
 
     /**
      * Configures the security filter chain with authentication and authorization rules.
@@ -104,14 +116,14 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         UserDetails admin = User.builder()
-            .username("admin")
-            .password(passwordEncoder().encode("admin123"))
+            .username(adminUsername)
+            .password(passwordEncoder().encode(adminPassword))
             .roles("ADMIN")
             .build();
 
         UserDetails user = User.builder()
-            .username("user")
-            .password(passwordEncoder().encode("user123"))
+            .username(defaultUsername)
+            .password(passwordEncoder().encode(defaultPassword))
             .roles("USER")
             .build();
 

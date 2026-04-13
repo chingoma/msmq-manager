@@ -1,0 +1,52 @@
+# MSMQ Manager - Windows Containers (Option B: Full MSMQ Support)
+#
+# PREREQUISITES:
+# - Windows host (Windows Server 2019+ or Windows 10/11 Pro/Enterprise)
+# - Docker Desktop or Docker Engine in Windows container mode
+# - Switch to Windows containers: Docker Desktop tray icon -> "Switch to Windows containers"
+#
+# INFRASTRUCTURE:
+# PostgreSQL and Redis must run externally (host or separate Linux Docker).
+# Use host.docker.internal to connect from container to host services.
+#
+# USAGE:
+#   docker-compose -f docker-compose.windows.yml up -d
+#   docker-compose -f docker-compose.windows.yml build --no-cache  # first build
+
+version: '3.8'
+
+services:
+  msmq-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+    image: msmq-manager:windows
+    container_name: msmq-manager
+    platform: windows/amd64
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: windows
+      SERVER_PORT: "8080"
+      # Connect to PostgreSQL on host (or set to your DB host)
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://host.docker.internal:5432/msmq_manager}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-msmq}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      # Connect to Redis on host (or set to your Redis host)
+      SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST:-host.docker.internal}
+      SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT:-6379}
+      SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      JAVA_OPTS: -Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport
+      # MSMQ remote server (for status listener / remote queue access)
+      MSMQ_REMOTE_SERVER: ${MSMQ_REMOTE_SERVER:-}
+    volumes:
+      - .\logs:C:\app\logs
+      - .\config:C:\app\config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "powershell", "-Command", "try { $r = Invoke-WebRequest -Uri 'http://localhost:8080/api/actuator/health' -UseBasicParsing -TimeoutSec 5; exit [int]($r.StatusCode -ne 200) } catch { exit 1 }"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
