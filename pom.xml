@@ -26,6 +26,8 @@
         <jacoco.version>0.8.10</jacoco.version>
         <spotbugs.version>4.7.3</spotbugs.version>
         <checkstyle.version>10.12.5</checkstyle.version>
+        <!-- Logback 1.4.x in Spring Boot 3.2 → encoder 7.x -->
+        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
     </properties>
 
     <dependencyManagement>
@@ -161,6 +163,12 @@
         </dependency>
 
         <!-- Test Dependencies -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>${logstash-logback-encoder.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
